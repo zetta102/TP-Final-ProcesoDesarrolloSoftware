@@ -1,0 +1,32 @@
+@startuml
+actor "Jugador" as Player
+boundary "API Gateway" as API
+control "ReportService" as Service
+control "AutoResolverNode" as Node1
+control "BotAnalyzerNode" as Node2
+control "HumanModNode" as Node3
+database "PostgreSQL" as DB
+
+Player -> Service : POST /api/reportes (payload) submitReport(dto)
+Service -> DB : save(new ReporteConducta(PENDIENTE))
+
+Service -> Node1 : handleRequest(reporte)
+
+alt AFK Confirmado por Logs
+    Node1 -> DB : updateStrikes(reportado, +1)
+    Node1 -> DB : updateStatus(RESUELTO_AUTO)
+else Evidencia Insuficiente
+    Node1 -> Node2 : passToNext(reporte)
+    
+    alt Regex encuentra Toxicidad en Chat
+        Node2 -> DB : applyChatRestriction(reportado)
+        Node2 -> DB : updateStatus(RESUELTO_BOT)
+    else Contexto Complejo
+        Node2 -> Node3 : passToNext(reporte)
+        Node3 -> DB : updateStatus(ESCALADO_HUMANO)
+        Node3 -> "Admin Dashboard" : Enqueue Ticket
+    end
+end
+
+Service --> Player : 202 Accepted UI: Reporte bajo revisión
+@enduml
