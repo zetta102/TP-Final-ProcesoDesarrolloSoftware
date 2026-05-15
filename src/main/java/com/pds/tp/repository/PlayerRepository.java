@@ -8,4 +8,6 @@ import java.util.UUID;
 public interface PlayerRepository extends JpaRepository<Player, UUID> {
     boolean existsByUsernameAndPassword(String username, String password);
 
+    Player findByUsername(String username);
+
 }

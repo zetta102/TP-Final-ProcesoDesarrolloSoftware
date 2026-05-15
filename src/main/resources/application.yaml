@@ -8,6 +8,9 @@ spring:
   threads:
     virtual:
       enabled: true
+  jpa:
+    generate-ddl: true
+
 
 management:
   otlp:

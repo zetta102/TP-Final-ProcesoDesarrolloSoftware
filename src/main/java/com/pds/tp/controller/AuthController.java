@@ -1,9 +1,9 @@
 package com.pds.tp.controller;
 
 import com.pds.tp.entity.Player;
+import com.pds.tp.model.LoginData;
 import com.pds.tp.model.PlayerData;
 import com.pds.tp.service.AuthService;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,7 +22,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity login() {
-        return ResponseEntity.ok().build();
+    public boolean login(@RequestBody LoginData loginData) {
+        return authService.authenticate(loginData.username(), loginData.password());
     }
 }
