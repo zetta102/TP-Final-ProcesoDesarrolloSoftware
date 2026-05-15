@@ -60,10 +60,10 @@ public class ScrimService {
 
     public List<Lobby> findActiveLobbiesByRegionAndRank(FindLobbyData findLobbyData) {
         return lobbyRepository.findAllByRegionAndMinRankLessThanEqualAndMaxRankGreaterThanEqual(
-                findLobbyData.region(),
-                findLobbyData.minRank(),
-                findLobbyData.maxRank()
-        )
+                        findLobbyData.region(),
+                        findLobbyData.minRank(),
+                        findLobbyData.maxRank()
+                )
                 .stream()
                 //.filter(lobby -> lobby.getScheduledTime());
                 .filter(lobby -> lobby.getMaxPing() <= Integer.parseInt(findLobbyData.latenciaMax()))

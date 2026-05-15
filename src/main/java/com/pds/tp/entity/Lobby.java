@@ -65,10 +65,6 @@ public class Lobby {
 
     }
 
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
     public UUID getId() {
         return id;
     }
@@ -111,6 +107,10 @@ public class Lobby {
 
     public String getStatus() {
         return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 
     public Player getHost() {

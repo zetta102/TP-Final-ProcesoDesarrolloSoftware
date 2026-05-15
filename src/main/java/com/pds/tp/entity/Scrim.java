@@ -43,10 +43,6 @@ public class Scrim {
     public Scrim() {
     }
 
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
     public UUID getId() {
         return id;
     }
@@ -73,6 +69,10 @@ public class Scrim {
 
     public String getStatus() {
         return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 
     @Override
