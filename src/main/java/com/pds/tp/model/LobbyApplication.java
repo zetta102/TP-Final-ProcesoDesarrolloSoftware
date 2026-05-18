@@ -1,9 +1,8 @@
 package com.pds.tp.model;
 
 public record LobbyApplication(
-        String playerId,
+        String username,
         String lobbyId,
-        String status,
         String desiredRole
 ) {
 }

@@ -26,3 +26,5 @@ management:
       export:
         otlp:
           endpoint: http://localhost:4318/v1/logs
+server:
+  port: 8081

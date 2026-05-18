@@ -1,6 +1,10 @@
 package com.pds.tp.entity;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -9,7 +13,9 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 import java.util.List;
 import java.util.UUID;
 
-
+@AllArgsConstructor
+@NoArgsConstructor
+@Getter
 @Entity
 public class Lobby {
     @Id
@@ -24,27 +30,12 @@ public class Lobby {
     private int maxPing;
     private String gameMode;
     private String map;
+    @Setter
     private String status;
     @OneToOne
     private Player host;
     @OneToMany
     private List<Player> players;
-
-    public Lobby(UUID id, String scheduledTime, int maxPlayers, int minPlayers, String region, String minRank, String maxRank, int maxPing, String gameMode, String map, String status, Player host, List<Player> players) {
-        this.id = id;
-        this.scheduledTime = scheduledTime;
-        this.maxPlayers = maxPlayers;
-        this.minPlayers = minPlayers;
-        this.region = region;
-        this.minRank = minRank;
-        this.maxRank = maxRank;
-        this.maxPing = maxPing;
-        this.gameMode = gameMode;
-        this.map = map;
-        this.status = status;
-        this.host = host;
-        this.players = players;
-    }
 
     public Lobby(String scheduledTime, int maxPlayers, int minPlayers, String region, String minRank, String maxRank, int maxPing, String gameMode, String map, String status, Player host, List<Player> players) {
         this.scheduledTime = scheduledTime;
@@ -59,66 +50,6 @@ public class Lobby {
         this.status = status;
         this.host = host;
         this.players = players;
-    }
-
-    public Lobby() {
-
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public String getScheduledTime() {
-        return scheduledTime;
-    }
-
-    public int getMaxPlayers() {
-        return maxPlayers;
-    }
-
-    public int getMinPlayers() {
-        return minPlayers;
-    }
-
-    public String getRegion() {
-        return region;
-    }
-
-    public String getMinRank() {
-        return minRank;
-    }
-
-    public String getMaxRank() {
-        return maxRank;
-    }
-
-    public int getMaxPing() {
-        return maxPing;
-    }
-
-    public String getGameMode() {
-        return gameMode;
-    }
-
-    public String getMap() {
-        return map;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public Player getHost() {
-        return host;
-    }
-
-    public List<Player> getPlayers() {
-        return players;
     }
 
     @Override

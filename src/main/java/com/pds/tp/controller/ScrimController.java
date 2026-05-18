@@ -2,9 +2,7 @@ package com.pds.tp.controller;
 
 import com.pds.tp.entity.Lobby;
 import com.pds.tp.entity.Scrim;
-import com.pds.tp.model.FindLobbyData;
-import com.pds.tp.model.LobbyData;
-import com.pds.tp.model.ScrimData;
+import com.pds.tp.model.*;
 import com.pds.tp.service.ScrimService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -47,17 +45,10 @@ public class ScrimController {
     }
 
 
-    //TODO: Implementar las siguientes funciones
-    @PostMapping("/{id}/postulaciones")
-    public ResponseEntity apply(@PathVariable String id) {
-        return ResponseEntity.ok().build();
+    @PostMapping("/applyToLobby")
+    public LobbyConfirmation apply(@RequestBody LobbyApplication lobbyApplication) {
+        return scrimService.applyToLobby(lobbyApplication);
     }
-
-    @PostMapping("/{id}/confirmaciones")
-    public ResponseEntity confirm(@PathVariable String id) {
-        return ResponseEntity.ok().build();
-    }
-
 
     @GetMapping("/{id}/estadisticas")
     public ResponseEntity stats(@PathVariable String id) {

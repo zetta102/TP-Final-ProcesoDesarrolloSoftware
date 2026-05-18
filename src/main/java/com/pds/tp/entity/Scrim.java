@@ -1,6 +1,10 @@
 package com.pds.tp.entity;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -9,7 +13,9 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-
+@AllArgsConstructor
+@NoArgsConstructor
+@Getter
 @Entity
 public class Scrim {
     @Id
@@ -21,57 +27,13 @@ public class Scrim {
     private String map;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
+    @Setter
     private String status;
-
-    public Scrim(UUID id, Lobby lobbyId, String gameMode, String map, LocalDateTime startTime, LocalDateTime endTime, String status) {
-        this.id = id;
-        this.lobbyId = lobbyId;
-        this.gameMode = gameMode;
-        this.map = map;
-        this.startTime = startTime;
-        this.endTime = endTime;
-        this.status = status;
-    }
 
     public Scrim(String gameMode, String map, LocalDateTime startTime, String status) {
         this.gameMode = gameMode;
         this.map = map;
         this.startTime = startTime;
-        this.status = status;
-    }
-
-    public Scrim() {
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public Lobby getLobbyId() {
-        return lobbyId;
-    }
-
-    public String getGameMode() {
-        return gameMode;
-    }
-
-    public String getMap() {
-        return map;
-    }
-
-    public LocalDateTime getStartTime() {
-        return startTime;
-    }
-
-    public LocalDateTime getEndTime() {
-        return endTime;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
         this.status = status;
     }
 

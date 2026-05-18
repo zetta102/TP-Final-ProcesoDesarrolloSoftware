@@ -1,6 +1,9 @@
 package com.pds.tp.entity;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -9,6 +12,10 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 import java.util.List;
 import java.util.UUID;
 
+@AllArgsConstructor
+@NoArgsConstructor
+@Getter
+//@Entity
 public class ScrimStatistics {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -21,45 +28,11 @@ public class ScrimStatistics {
     private List<Player> blueTeam;
     private String winningTeam;
 
-    public ScrimStatistics(UUID id, Scrim scrimId, List<Player> redTeam, List<Player> blueTeam, String winningTeam) {
-        this.id = id;
-        this.scrimId = scrimId;
-        this.redTeam = redTeam;
-        this.blueTeam = blueTeam;
-        this.winningTeam = winningTeam;
-    }
-
-
     public ScrimStatistics(Scrim scrimId, List<Player> redTeam, List<Player> blueTeam, String winningTeam) {
         this.scrimId = scrimId;
         this.redTeam = redTeam;
         this.blueTeam = blueTeam;
         this.winningTeam = winningTeam;
-    }
-
-    public ScrimStatistics() {
-
-
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public Scrim getScrimId() {
-        return scrimId;
-    }
-
-    public List<Player> getRedTeam() {
-        return redTeam;
-    }
-
-    public List<Player> getBlueTeam() {
-        return blueTeam;
-    }
-
-    public String getWinningTeam() {
-        return winningTeam;
     }
 
     @Override

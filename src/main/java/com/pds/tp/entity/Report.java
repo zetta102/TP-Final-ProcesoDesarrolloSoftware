@@ -1,14 +1,20 @@
 package com.pds.tp.entity;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
-
+@AllArgsConstructor
+@NoArgsConstructor
+@Getter
 @Entity
 public class Report {
     @Id
@@ -17,7 +23,9 @@ public class Report {
     @ManyToOne
     private Scrim scrimId;
     @OneToOne
-    private Player playerName;
+    private Player reportingPlayer;
+    @ManyToOne
+    private Player reportedPlayer;
     private String reason;
     private String description;
     private String status;
@@ -25,55 +33,16 @@ public class Report {
     private String resolvedAt;
     private String resolutionDetails;
 
-    public Report(UUID id, Scrim scrimId, Player playerName, String reason, String description, String status, String reportedAt, String resolvedAt, String resolutionDetails) {
-        this.id = id;
+    public Report(Scrim scrimId, Player reportingPlayer, Player reportedPlayer, String reason, String description) {
         this.scrimId = scrimId;
-        this.playerName = playerName;
+        this.reportingPlayer = reportingPlayer;
+        this.reportedPlayer = reportedPlayer;
         this.reason = reason;
         this.description = description;
-        this.status = status;
-        this.reportedAt = reportedAt;
-        this.resolvedAt = resolvedAt;
-        this.resolutionDetails = resolutionDetails;
-    }
-
-    public Report() {
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public Scrim getScrimId() {
-        return scrimId;
-    }
-
-    public Player getPlayerName() {
-        return playerName;
-    }
-
-    public String getReason() {
-        return reason;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public String getReportedAt() {
-        return reportedAt;
-    }
-
-    public String getResolvedAt() {
-        return resolvedAt;
-    }
-
-    public String getResolutionDetails() {
-        return resolutionDetails;
+        this.status = "Created";
+        this.reportedAt = LocalDate.now().toString();
+        this.resolvedAt = null;
+        this.resolutionDetails = null;
     }
 
     @Override
@@ -97,7 +66,7 @@ public class Report {
         return new ToStringBuilder(this, ToStringStyle.JSON_STYLE)
                 .append("id", id)
                 .append("scrimId", scrimId)
-                .append("playerName", playerName)
+                .append("playerName", reportingPlayer)
                 .append("reason", reason)
                 .append("description", description)
                 .append("status", status)
