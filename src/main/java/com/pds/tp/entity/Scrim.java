@@ -26,14 +26,17 @@ public class Scrim {
     private String gameMode;
     private String map;
     private LocalDateTime startTime;
+    @Setter
     private LocalDateTime endTime;
     @Setter
     private String status;
 
-    public Scrim(String gameMode, String map, LocalDateTime startTime, String status) {
+    public Scrim(Lobby lobby, String gameMode, String map, String status) {
+        this.lobbyId = lobby;
         this.gameMode = gameMode;
         this.map = map;
-        this.startTime = startTime;
+        this.startTime = LocalDateTime.now();
+        this.endTime = null;
         this.status = status;
     }
 

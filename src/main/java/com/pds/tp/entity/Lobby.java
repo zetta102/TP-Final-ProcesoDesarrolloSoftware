@@ -10,6 +10,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -21,7 +22,7 @@ public class Lobby {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
-    private String scheduledTime;
+    private LocalDateTime scheduledTime;
     private int maxPlayers;
     private int minPlayers;
     private String region;
@@ -37,7 +38,7 @@ public class Lobby {
     @OneToMany
     private List<Player> players;
 
-    public Lobby(String scheduledTime, int maxPlayers, int minPlayers, String region, String minRank, String maxRank, int maxPing, String gameMode, String map, String status, Player host, List<Player> players) {
+    public Lobby(LocalDateTime scheduledTime, int maxPlayers, int minPlayers, String region, String minRank, String maxRank, int maxPing, String gameMode, String map, String status, Player host, List<Player> players) {
         this.scheduledTime = scheduledTime;
         this.maxPlayers = maxPlayers;
         this.minPlayers = minPlayers;

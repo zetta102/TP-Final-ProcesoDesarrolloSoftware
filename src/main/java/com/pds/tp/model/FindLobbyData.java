@@ -5,6 +5,6 @@ public record FindLobbyData(
         String minRank,
         String maxRank,
         String fecha,
-        String latenciaMax
+        int maxPing
 ) {
 }

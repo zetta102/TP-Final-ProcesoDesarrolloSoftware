@@ -2,9 +2,9 @@ package com.pds.tp.controller;
 
 import com.pds.tp.entity.Lobby;
 import com.pds.tp.entity.Scrim;
+import com.pds.tp.entity.ScrimStatistics;
 import com.pds.tp.model.*;
 import com.pds.tp.service.ScrimService;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,8 +29,7 @@ public class ScrimController {
     }
 
     @GetMapping("/findLobbies")
-    public List<Lobby> find(
-            @RequestBody FindLobbyData findLobbyData) {
+    public List<Lobby> find(@RequestBody FindLobbyData findLobbyData) {
         return scrimService.findActiveLobbiesByRegionAndRank(findLobbyData);
     }
 
@@ -44,14 +43,19 @@ public class ScrimController {
         return scrimService.finishScrimById(UUID.fromString(id));
     }
 
-
     @PostMapping("/applyToLobby")
     public LobbyConfirmation apply(@RequestBody LobbyApplication lobbyApplication) {
         return scrimService.applyToLobby(lobbyApplication);
     }
 
-    @GetMapping("/{id}/estadisticas")
-    public ResponseEntity stats(@PathVariable String id) {
-        return ResponseEntity.ok().build();
+    @PostMapping
+    public ReportConfirmation reportPlayer(@RequestBody ReportApplication reportApplication) {
+        return scrimService.reportPlayer(reportApplication);
     }
+
+    @GetMapping("/scrimStatistics")
+    public ScrimStatistics stats(@RequestBody ScrimData scrimStatisticsData) {
+        return scrimService.getStatistics(UUID.fromString(scrimStatisticsData.lobbyId()));
+    }
+
 }

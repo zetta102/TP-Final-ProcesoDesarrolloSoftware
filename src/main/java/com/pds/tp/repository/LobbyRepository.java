@@ -7,6 +7,11 @@ import java.util.List;
 import java.util.UUID;
 
 public interface LobbyRepository extends JpaRepository<Lobby, UUID> {
-    List<Lobby> findAllByRegionAndMinRankLessThanEqualAndMaxRankGreaterThanEqual(String region, String minRank, String maxRank);
+    List<Lobby> findAllByRegionAndMinRankLessThanEqualAndMaxRankGreaterThanEqualAndMaxPingLessThanEqualAndStatusEquals(String region,
+                                                                                                                       String minRank,
+                                                                                                                       String maxRank,
+                                                                                                                       int maxPing,
+                                                                                                                       String status);
 
+    List<Lobby> findAllByStatusEquals(String status);
 }
