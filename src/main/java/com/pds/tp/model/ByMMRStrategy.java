@@ -2,26 +2,38 @@ package com.pds.tp.model;
 
 import com.pds.tp.entity.Lobby;
 import com.pds.tp.entity.Player;
-import com.pds.tp.model.MatchmakingStrategy;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
+
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Component
-public class ByMMRStrategy implements MatchmakingStrategy {
+@Primary
+public class ByMMRStrategy implements com.pds.tp.domain.strategy.MatchmakingStrategy {
+
+    private final Map<String, Integer> rankValues = Map.of(
+            "HIERRO", 1, "BRONCE", 2, "PLATA", 3, "ORO", 4,
+            "PLATINO", 5, "DIAMANTE", 6, "RADIANTE", 7
+    );
 
     @Override
     public List<Player> seleccionar(List<Player> candidatos, Lobby lobby) {
-        // Example: Filter candidates strictly by the Lobby's acceptable rank range
-        // Note: You would convert "Hierro", "Oro", etc., to numeric MMR values here
+        int minLobbyRank = getRankValue(lobby.getMinRank());
+        int maxLobbyRank = getRankValue(lobby.getMaxRank());
+
         return candidatos.stream()
-                .filter(p -> isRankWithinRange(p.getVisibleRank(), lobby.getMinRank(), lobby.getMaxRank()))
-                .limit(lobby.getMaxPlayers())
+                .filter(p -> {
+                    int playerRank = getRankValue(p.getVisibleRank());
+                    return playerRank >= minLobbyRank && playerRank <= maxLobbyRank;
+                })
+                .limit(lobby.getMaxPlayers() - lobby.getPlayers().size())
                 .collect(Collectors.toList());
     }
 
-    private boolean isRankWithinRange(String playerRank, String minRank, String maxRank) {
-        // Implement rank comparison logic here
-        return true;
+    private int getRankValue(String rank) {
+        if (rank == null) return 0;
+        return rankValues.getOrDefault(rank.toUpperCase(), 0);
     }
 }

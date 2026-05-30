@@ -3,9 +3,11 @@ package com.pds.tp.service;
 import com.pds.tp.entity.Player;
 import com.pds.tp.model.PlayerData;
 import com.pds.tp.repository.PlayerRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 public class AuthService {
     private final PlayerRepository playerRepository;
@@ -17,7 +19,6 @@ public class AuthService {
     }
 
     public Player register(PlayerData playerData) {
-        // Hash the password before saving
         String hashedPassword = passwordEncoder.encode(playerData.password());
         Player player = new Player(
                 playerData.playerName(),
@@ -27,14 +28,15 @@ public class AuthService {
                 playerData.platform(),
                 playerData.availability()
         );
+        log.info("Registered new player: {}", player.getUsername());
         return playerRepository.save(player);
     }
 
-    public boolean authenticate(String username, String rawPassword) {
+    public boolean authenticate(String username, String password) {
         Player player = playerRepository.findByUsername(username);
-        if (player == null) return false;
-
-        // Compare the raw password with the hashed password in the DB
-        return passwordEncoder.matches(rawPassword, player.getPassword());
+        if (player == null) {
+            return false;
+        }
+        return passwordEncoder.matches(password, player.getPassword());
     }
 }

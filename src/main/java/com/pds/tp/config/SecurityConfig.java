@@ -20,10 +20,11 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) {
         http
                 .authorizeHttpRequests(authorize -> authorize
-                        .anyRequest().permitAll() // Update this later to secure specific endpoints
+                        .anyRequest().permitAll() // Update to secure specific endpoints later
                 )
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(AbstractHttpConfigurer::disable);
+
         return http.build();
     }
 }

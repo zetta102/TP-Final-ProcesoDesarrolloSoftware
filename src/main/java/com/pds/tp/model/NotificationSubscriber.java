@@ -14,10 +14,15 @@ public class NotificationSubscriber {
     }
 
     @EventListener
-    public void onScrimStateChanged(ScrimStateChangedEvent event) {
-        log.info("Event Received: Lobby {} changed to {}", event.getLobbyId(), event.getNuevoEstado());
+    public void onDomainEvent(ScrimStateChangedEvent event) {
+        Notifier discord = notifierFactory.createDiscordNotifier();
+        Notifier email = notifierFactory.createEmailNotifier();
 
-        Notifier discordNotifier = notifierFactory.createDiscordNotifier();
-        discordNotifier.sendNotification("General Channel", "Lobby " + event.getLobbyId() + " is now " + event.getNuevoEstado());
+        String message = String.format("El Lobby %s ha cambiado de estado a: %s",
+                event.getLobbyId(), event.getNuevoEstado());
+
+        // Dispatch notifications via our Abstract Factory created handlers
+        discord.sendNotification("#scrim-updates", message);
+        email.sendNotification("all-players@scrims.local", message);
     }
 }

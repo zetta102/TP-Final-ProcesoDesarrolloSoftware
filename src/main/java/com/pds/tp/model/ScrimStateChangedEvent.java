@@ -1,6 +1,7 @@
 package com.pds.tp.model;
 
 import org.springframework.context.ApplicationEvent;
+
 import java.util.UUID;
 
 public class ScrimStateChangedEvent extends ApplicationEvent {
@@ -13,6 +14,11 @@ public class ScrimStateChangedEvent extends ApplicationEvent {
         this.nuevoEstado = nuevoEstado;
     }
 
-    public UUID getLobbyId() { return lobbyId; }
-    public String getNuevoEstado() { return nuevoEstado; }
+    public UUID getLobbyId() {
+        return lobbyId;
+    }
+
+    public String getNuevoEstado() {
+        return nuevoEstado;
+    }
 }

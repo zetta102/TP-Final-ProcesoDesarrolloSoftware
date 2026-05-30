@@ -1,7 +1,8 @@
-package com.pds.tp.model;
+package com.pds.tp.domain.strategy;
 
 import com.pds.tp.entity.Lobby;
 import com.pds.tp.entity.Player;
+
 import java.util.List;
 
 public interface MatchmakingStrategy {
