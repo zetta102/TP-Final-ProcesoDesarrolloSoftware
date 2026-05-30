@@ -5,12 +5,15 @@ import com.pds.tp.entity.Scrim;
 import com.pds.tp.entity.ScrimStatistics;
 import com.pds.tp.model.*;
 import com.pds.tp.service.ScrimService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
-@RestController("v1/api/scrims")
+@RestController
+@RequestMapping("/v1/api/scrims")
 public class ScrimController {
     private final ScrimService scrimService;
 
@@ -19,43 +22,54 @@ public class ScrimController {
     }
 
     @PostMapping("/createLobby")
-    public Lobby createLobby(@RequestBody LobbyData lobbyData) {
-        return scrimService.createLobby(lobbyData);
-    }
-
-    @PostMapping("/startScrim")
-    public Scrim create(@RequestBody ScrimData scrimData) {
-        return scrimService.startScrim(scrimData);
+    public ResponseEntity<Lobby> createLobby(@RequestBody LobbyData lobbyData) {
+        return ResponseEntity.status(201).body(scrimService.createLobby(lobbyData));
     }
 
     @GetMapping("/findLobbies")
-    public List<Lobby> find(@RequestBody FindLobbyData findLobbyData) {
-        return scrimService.findActiveLobbiesByRegionAndRank(findLobbyData);
-    }
-
-    @PostMapping("/{id}/cancelLobby")
-    public String cancel(@PathVariable String id) {
-        return scrimService.cancelLobbyById(UUID.fromString(id));
-    }
-
-    @PostMapping("/{id}/finishScrim")
-    public String end(@PathVariable String id) {
-        return scrimService.finishScrimById(UUID.fromString(id));
+    public ResponseEntity<List<Lobby>> find(@RequestBody FindLobbyData findLobbyData) {
+        return ResponseEntity.ok(scrimService.findActiveLobbiesByRegionAndRank(findLobbyData));
     }
 
     @PostMapping("/applyToLobby")
-    public LobbyConfirmation apply(@RequestBody LobbyApplication lobbyApplication) {
-        return scrimService.applyToLobby(lobbyApplication);
+    public ResponseEntity<LobbyConfirmation> apply(@RequestBody LobbyApplication lobbyApplication) {
+        return ResponseEntity.ok(scrimService.applyToLobby(lobbyApplication));
     }
 
-    @PostMapping
-    public ReportConfirmation reportPlayer(@RequestBody ReportApplication reportApplication) {
-        return scrimService.reportPlayer(reportApplication);
+    // MISSING ENDPOINT ADDED: Confirmación requerida antes de EnJuego
+    @PostMapping("/{id}/confirmaciones")
+    public ResponseEntity<Map<String, String>> confirmarParticipacion(
+            @PathVariable String id,
+            @RequestBody Map<String, String> payload) {
+        String username = payload.get("username");
+        String result = scrimService.confirmarParticipacion(UUID.fromString(id), username);
+        return ResponseEntity.ok(Map.of("mensaje", result));
+    }
+
+    @PostMapping("/startScrim")
+    public ResponseEntity<Scrim> start(@RequestBody ScrimData scrimData) {
+        return ResponseEntity.ok(scrimService.startScrim(scrimData));
+    }
+
+    @PostMapping("/{id}/cancelLobby")
+    public ResponseEntity<Map<String, String>> cancel(@PathVariable String id) {
+        String res = scrimService.cancelLobbyById(UUID.fromString(id));
+        return ResponseEntity.ok(Map.of("mensaje", res));
+    }
+
+    @PostMapping("/{id}/finishScrim")
+    public ResponseEntity<Map<String, String>> end(@PathVariable String id) {
+        String res = scrimService.finishScrimById(UUID.fromString(id));
+        return ResponseEntity.ok(Map.of("mensaje", res));
+    }
+
+    @PostMapping("/reportes")
+    public ResponseEntity<ReportConfirmation> reportPlayer(@RequestBody ReportApplication reportApplication) {
+        return ResponseEntity.status(201).body(scrimService.reportPlayer(reportApplication));
     }
 
     @GetMapping("/scrimStatistics")
-    public ScrimStatistics stats(@RequestBody ScrimData scrimStatisticsData) {
-        return scrimService.getStatistics(UUID.fromString(scrimStatisticsData.lobbyId()));
+    public ResponseEntity<ScrimStatistics> stats(@RequestBody ScrimData scrimStatisticsData) {
+        return ResponseEntity.ok(scrimService.getStatistics(UUID.fromString(scrimStatisticsData.lobbyId())));
     }
-
 }

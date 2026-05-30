@@ -44,20 +44,16 @@ public class ScrimService {
 
     public Lobby createLobby(LobbyData lobbyData) {
         Player player = playerRepository.findByUsername(lobbyData.hostUserName());
-        Lobby lobby = new Lobby(
-                LocalDateTime.now(),
-                lobbyData.maxPlayers(),
-                lobbyData.minPlayers(),
-                player.getRegion(),
-                lobbyData.minRank(),
-                lobbyData.maxRank(),
-                lobbyData.maxPing(),
-                lobbyData.gameMode(),
-                lobbyData.map(),
-                "Buscando", // Changed from "Waiting" to match State Pattern standard
-                player,
-                new java.util.ArrayList<>()
-        );
+
+        // Implementing the Builder Pattern
+        Lobby lobby = new LobbyBuilder()
+                .conHost(player)
+                .conFormato(lobbyData.minPlayers(), lobbyData.maxPlayers())
+                .conRango(lobbyData.minRank(), lobbyData.maxRank())
+                .conJuego(lobbyData.gameMode(), lobbyData.map())
+                .conLatenciaMax(lobbyData.maxPing())
+                .build();
+
         return lobbyRepository.save(lobby);
     }
 
