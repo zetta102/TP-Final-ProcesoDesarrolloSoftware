@@ -1,12 +1,15 @@
 package com.pds.tp.domain.entity;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -23,7 +26,14 @@ public class Player {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
     private String username;
+    private String email;
     private String password;
+    @Setter
+    @Enumerated(EnumType.STRING)
+    private EmailVerificationStatus emailVerificationStatus;
+    @Setter
+    @Enumerated(EnumType.STRING)
+    private UserRole role;
     private String preferredRole;
     private String region;
     private String platform;
@@ -35,9 +45,12 @@ public class Player {
     private int losses;
     private double kda;
 
-    public Player(String username, String password, String preferredRole, String region, String platform, String availability) {
+    public Player(String username, String email, String password, String preferredRole, String region, String platform, String availability) {
         this.username = username;
+        this.email = email;
         this.password = password;
+        this.emailVerificationStatus = EmailVerificationStatus.PENDIENTE;
+        this.role = UserRole.USER;
         this.preferredRole = preferredRole;
         this.region = region;
         this.platform = platform;
@@ -71,7 +84,10 @@ public class Player {
         return new ToStringBuilder(this, ToStringStyle.JSON_STYLE)
                 .append("id", id)
                 .append("username", username)
+                .append("email", email)
                 .append("password", password)
+                .append("emailVerificationStatus", emailVerificationStatus)
+                .append("role", role)
                 .append("preferredRole", preferredRole)
                 .append("region", region)
                 .append("platform", platform)

@@ -28,6 +28,7 @@ public class ScrimStatistics {
     private List<Player> redTeam;
     @OneToMany
     private List<Player> blueTeam;
+    @Setter
     private String winningTeam;
     @Setter
     private String status;

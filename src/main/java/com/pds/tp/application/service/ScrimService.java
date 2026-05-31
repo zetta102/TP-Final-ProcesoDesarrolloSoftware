@@ -1,16 +1,15 @@
 package com.pds.tp.application.service;
 
 import com.pds.tp.application.dto.FindLobbyData;
+import com.pds.tp.application.dto.CreateScrimRequest;
+import com.pds.tp.application.dto.CreateStatisticsRequest;
 import com.pds.tp.application.dto.LobbyApplication;
 import com.pds.tp.application.dto.LobbyConfirmation;
 import com.pds.tp.application.dto.LobbyData;
-import com.pds.tp.application.dto.ReportApplication;
-import com.pds.tp.application.dto.ReportConfirmation;
 import com.pds.tp.application.dto.ScrimData;
 import com.pds.tp.domain.builder.LobbyBuilder;
 import com.pds.tp.domain.entity.Lobby;
 import com.pds.tp.domain.entity.Player;
-import com.pds.tp.domain.entity.Report;
 import com.pds.tp.domain.entity.Scrim;
 import com.pds.tp.domain.entity.ScrimStatistics;
 import com.pds.tp.domain.state.CanceledState;
@@ -24,7 +23,6 @@ import com.pds.tp.domain.state.SearchingState;
 import com.pds.tp.domain.strategy.MatchmakingStrategy;
 import com.pds.tp.infrastructure.repository.LobbyRepository;
 import com.pds.tp.infrastructure.repository.PlayerRepository;
-import com.pds.tp.infrastructure.repository.ReportRepository;
 import com.pds.tp.infrastructure.repository.ScrimRepository;
 import com.pds.tp.infrastructure.repository.ScrimStatisticsRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +31,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -41,13 +40,14 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class ScrimService {
     private static final String STATUS_BUSCANDO = "Buscando";
+    private static final String STATUS_CONFIRMADO = "Confirmado";
+    private static final String STATUS_EN_JUEGO = "EnJuego";
     private static final String STATUS_FINALIZADO = "Finalizado";
 
     private final ScrimRepository scrimRepository;
     private final LobbyRepository lobbyRepository;
     private final PlayerRepository playerRepository;
     private final ScrimStatisticsRepository scrimStatisticsRepository;
-    private final ReportRepository reportRepository;
 
     // Pattern Injections
     private final ApplicationEventPublisher eventPublisher;
@@ -55,13 +55,12 @@ public class ScrimService {
 
     public ScrimService(ScrimRepository scrimRepository, LobbyRepository lobbyRepository,
                         PlayerRepository playerRepository, ScrimStatisticsRepository scrimStatisticsRepository,
-                        ReportRepository reportRepository, ApplicationEventPublisher eventPublisher,
+                        ApplicationEventPublisher eventPublisher,
                         MatchmakingStrategy matchmakingStrategy) {
         this.scrimRepository = scrimRepository;
         this.lobbyRepository = lobbyRepository;
         this.playerRepository = playerRepository;
         this.scrimStatisticsRepository = scrimStatisticsRepository;
-        this.reportRepository = reportRepository;
         this.eventPublisher = eventPublisher;
         this.matchmakingStrategy = matchmakingStrategy;
     }
@@ -79,6 +78,25 @@ public class ScrimService {
                 .build();
 
         return lobbyRepository.save(lobby);
+    }
+
+    public Lobby createScrim(CreateScrimRequest request) {
+        int minPlayers = request.cantidadJugadoresPorLado();
+        int maxPlayers = request.cantidadTotalJugadores() > 0
+                ? request.cantidadTotalJugadores()
+                : request.cantidadJugadoresPorLado() * 2;
+
+        return createLobby(new LobbyData(
+                request.fecha(),
+                maxPlayers,
+                minPlayers,
+                request.rangoMin(),
+                request.rangoMax(),
+                request.latenciaMax(),
+                request.juego() != null ? request.juego() : request.formato(),
+                request.mapa(),
+                request.hostUserName()
+        ));
     }
 
     public LobbyConfirmation applyToLobby(LobbyApplication lobbyApplication) {
@@ -112,6 +130,12 @@ public class ScrimService {
 
     public Scrim startScrim(ScrimData scrimData) {
         Lobby lobby = lobbyRepository.getReferenceById(UUID.fromString(scrimData.lobbyId()));
+
+        return scrimRepository.findByLobbyId(lobby)
+                .orElseGet(() -> createAndPersistScrim(lobby));
+    }
+
+    private Scrim createAndPersistScrim(Lobby lobby) {
         ScrimContext context = new ScrimContext(lobby, hydrateState(lobby.getStatus()), eventPublisher);
 
         context.iniciar(); // Delegates to State Pattern
@@ -125,6 +149,52 @@ public class ScrimService {
         scrimStatisticsRepository.save(stats);
 
         return scrim;
+    }
+
+    public int autoStartConfirmedLobbies(LocalDateTime now) {
+        List<Lobby> lobbiesToStart = lobbyRepository
+                .findAllByStatusEqualsAndScheduledTimeLessThanEqual(STATUS_CONFIRMADO, now);
+
+        int started = 0;
+        for (Lobby lobby : lobbiesToStart) {
+            if (scrimRepository.findByLobbyId(lobby).isPresent()) {
+                continue;
+            }
+
+            try {
+                createAndPersistScrim(lobby);
+                started++;
+            } catch (IllegalStateException ex) {
+                log.warn("No se pudo iniciar lobby {} en scheduler: {}", lobby.getId(), ex.getMessage());
+            }
+        }
+
+        return started;
+    }
+
+    public int autoFinalizeRunningScrims(LocalDateTime now, long maxDurationHours) {
+        List<Scrim> runningScrims = scrimRepository.findAllByStatusEquals(STATUS_EN_JUEGO);
+        int finalized = 0;
+
+        for (Scrim scrim : runningScrims) {
+            if (scrim.getStartTime() == null) {
+                continue;
+            }
+
+            long runningHours = ChronoUnit.HOURS.between(scrim.getStartTime(), now);
+            if (runningHours < maxDurationHours) {
+                continue;
+            }
+
+            try {
+                finishScrimById(scrim.getId());
+                finalized++;
+            } catch (IllegalStateException ex) {
+                log.warn("No se pudo finalizar scrim {} en scheduler: {}", scrim.getId(), ex.getMessage());
+            }
+        }
+
+        return finalized;
     }
 
     public String cancelLobbyById(UUID lobbyId) {
@@ -168,7 +238,10 @@ public class ScrimService {
         // Currently wrapping the repo call, but Strategy Pattern is implemented above
         // to filter *candidates* during auto-matchmaking cycles.
         return lobbyRepository.findAllByRegionAndMinRankLessThanEqualAndMaxRankGreaterThanEqualAndMaxPingLessThanEqualAndStatusEquals(
-                data.region(), data.minRank(), data.maxRank(), data.maxPing(), STATUS_BUSCANDO);
+                        data.region(), data.rangoMin(), data.rangoMax(), data.latenciaMax(), STATUS_BUSCANDO)
+                .stream()
+                .filter(lobby -> data.juego() == null || data.juego().isBlank() || lobby.getGameMode().equalsIgnoreCase(data.juego()))
+                .toList();
     }
 
     @Scheduled(fixedRate = 60, timeUnit = TimeUnit.SECONDS)
@@ -192,22 +265,22 @@ public class ScrimService {
         }
     }
 
-    public ReportConfirmation reportPlayer(ReportApplication reportApp) {
-        // Existing implementation remains intact
-        Player reportingPlayer = playerRepository.findByUsername(reportApp.reportingPlayerUsername());
-        Player reportedPlayer = playerRepository.findByUsername(reportApp.reportedPlayerUsername());
-        Scrim scrim = scrimRepository.getReferenceById(UUID.fromString(reportApp.lobbyId()));
-
-        if (!scrim.getStatus().equals("Finalizado")) {
-            throw new IllegalStateException("Scrim no finalizada.");
-        }
-
-        Report report = reportRepository.save(new Report(scrim, reportingPlayer, reportedPlayer, reportApp.reason(), ""));
-        return new ReportConfirmation(report.getId(), report.getReportingPlayer().getUsername(), report.getScrimId().toString(), report.getReportedPlayer().getUsername(), report.getStatus());
-    }
-
     public ScrimStatistics getStatistics(UUID scrimId) {
         return scrimStatisticsRepository.findByScrimId(scrimRepository.getReferenceById(scrimId));
+    }
+
+    public ScrimStatistics saveStatistics(UUID scrimId, CreateStatisticsRequest request) {
+        Scrim scrim = scrimRepository.getReferenceById(scrimId);
+        ScrimStatistics statistics = scrimStatisticsRepository.findByScrimId(scrim);
+
+        if (request.winningTeam() != null && !request.winningTeam().isBlank()) {
+            statistics.setWinningTeam(request.winningTeam());
+        }
+        if (request.status() != null && !request.status().isBlank()) {
+            statistics.setStatus(request.status());
+        }
+
+        return scrimStatisticsRepository.save(statistics);
     }
 
     // --- State Hydration Helper ---

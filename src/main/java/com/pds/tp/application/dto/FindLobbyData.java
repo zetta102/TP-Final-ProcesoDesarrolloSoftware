@@ -1,11 +1,12 @@
 package com.pds.tp.application.dto;
 
 public record FindLobbyData(
+        String juego,
         String region,
-        String minRank,
-        String maxRank,
+        String rangoMin,
+        String rangoMax,
         String fecha,
-        int maxPing
+        int latenciaMax
 ) {
 }
 

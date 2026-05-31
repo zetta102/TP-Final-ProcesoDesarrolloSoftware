@@ -1,6 +1,7 @@
 package com.pds.tp.application.service;
 
 import com.pds.tp.domain.entity.Player;
+import com.pds.tp.domain.entity.EmailVerificationStatus;
 import com.pds.tp.application.dto.PlayerData;
 import com.pds.tp.infrastructure.repository.PlayerRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -19,9 +20,17 @@ public class AuthService {
     }
 
     public Player register(PlayerData playerData) {
+        if (playerRepository.existsByUsername(playerData.playerName())) {
+            throw new IllegalArgumentException("El username ya está registrado.");
+        }
+        if (playerRepository.existsByEmail(playerData.email())) {
+            throw new IllegalArgumentException("El email ya está registrado.");
+        }
+
         String hashedPassword = passwordEncoder.encode(playerData.password());
         Player player = new Player(
                 playerData.playerName(),
+                playerData.email(),
                 hashedPassword,
                 playerData.preferredRole(),
                 playerData.region(),
@@ -37,7 +46,24 @@ public class AuthService {
         if (player == null) {
             return false;
         }
+        if (player.getEmailVerificationStatus() != EmailVerificationStatus.VERIFICADO) {
+            return false;
+        }
         return passwordEncoder.matches(password, player.getPassword());
+    }
+
+    public String verifyEmail(String username) {
+        Player player = playerRepository.findByUsername(username);
+        if (player == null) {
+            return "Usuario no encontrado.";
+        }
+        if (player.getEmailVerificationStatus() == EmailVerificationStatus.VERIFICADO) {
+            return "El email ya estaba verificado.";
+        }
+
+        player.setEmailVerificationStatus(EmailVerificationStatus.VERIFICADO);
+        playerRepository.save(player);
+        return "Email verificado con éxito.";
     }
 }
 

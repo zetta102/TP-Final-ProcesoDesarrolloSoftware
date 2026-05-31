@@ -1,115 +1,99 @@
 package com.pds.tp.controller;
 
-import com.pds.tp.application.command.CommandExecutor;
-import com.pds.tp.application.command.SwapJugadoresCommand;
-import com.pds.tp.application.dto.FindLobbyData;
-import com.pds.tp.application.dto.LobbyApplication;
+import com.pds.tp.application.facade.ScrimFacade;
+import com.pds.tp.application.dto.ApplyToScrimRequest;
+import com.pds.tp.application.dto.ConfirmParticipationRequest;
+import com.pds.tp.application.dto.CreateScrimRequest;
+import com.pds.tp.application.dto.CreateStatisticsRequest;
 import com.pds.tp.application.dto.LobbyConfirmation;
-import com.pds.tp.application.dto.LobbyData;
 import com.pds.tp.application.dto.ReportApplication;
 import com.pds.tp.application.dto.ReportConfirmation;
-import com.pds.tp.application.dto.ScrimData;
-import com.pds.tp.application.service.ReportService;
-import com.pds.tp.application.service.ScrimService;
+import com.pds.tp.application.dto.SwapPlayersRequest;
 import com.pds.tp.domain.entity.Lobby;
-import com.pds.tp.domain.entity.Player;
 import com.pds.tp.domain.entity.Scrim;
 import com.pds.tp.domain.entity.ScrimStatistics;
-import com.pds.tp.domain.state.ScrimContext;
-import com.pds.tp.infrastructure.repository.LobbyRepository;
-import com.pds.tp.infrastructure.repository.PlayerRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 @RestController
-@RequestMapping("/v1/api/scrims")
+@RequestMapping({"/api/scrims", "/v1/api/scrims"})
 public class ScrimController {
+    private static final String MESSAGE_KEY = "mensaje";
 
-    private final ScrimService scrimService;
-    private final ReportService reportService;
-    private final CommandExecutor commandExecutor;
-    private final LobbyRepository lobbyRepository;
-    private final PlayerRepository playerRepository;
+    private final ScrimFacade scrimFacade;
 
-    public ScrimController(ScrimService scrimService, ReportService reportService,
-                           CommandExecutor commandExecutor, LobbyRepository lobbyRepository,
-                           PlayerRepository playerRepository) {
-        this.scrimService = scrimService;
-        this.reportService = reportService;
-        this.commandExecutor = commandExecutor;
-        this.lobbyRepository = lobbyRepository;
-        this.playerRepository = playerRepository;
+    public ScrimController(ScrimFacade scrimFacade) {
+        this.scrimFacade = scrimFacade;
     }
 
-    @PostMapping("/createLobby")
-    public ResponseEntity<Lobby> createLobby(@RequestBody LobbyData lobbyData) {
-        return ResponseEntity.status(201).body(scrimService.createLobby(lobbyData));
+    @PostMapping
+    public ResponseEntity<Lobby> createLobby(@RequestBody CreateScrimRequest request) {
+        return ResponseEntity.status(201).body(scrimFacade.createScrim(request));
     }
 
-    @GetMapping("/findLobbies")
-    public ResponseEntity<List<Lobby>> find(@RequestBody FindLobbyData findLobbyData) {
-        return ResponseEntity.ok(scrimService.findActiveLobbiesByRegionAndRank(findLobbyData));
+    @GetMapping
+    public ResponseEntity<List<Lobby>> find(
+            @RequestParam(required = false) String juego,
+            @RequestParam String region,
+            @RequestParam String rangoMin,
+            @RequestParam String rangoMax,
+            @RequestParam(required = false) String fecha,
+            @RequestParam int latenciaMax) {
+        return ResponseEntity.ok(scrimFacade.findScrims(juego, region, rangoMin, rangoMax, fecha, latenciaMax));
     }
 
-    @PostMapping("/applyToLobby")
-    public ResponseEntity<LobbyConfirmation> apply(@RequestBody LobbyApplication lobbyApplication) {
-        return ResponseEntity.ok(scrimService.applyToLobby(lobbyApplication));
+    @PostMapping("/{id}/postulaciones")
+    public ResponseEntity<LobbyConfirmation> apply(@PathVariable String id, @RequestBody ApplyToScrimRequest request) {
+        return ResponseEntity.ok(scrimFacade.applyToScrim(id, request));
     }
 
     @PostMapping("/{id}/confirmaciones")
     public ResponseEntity<Map<String, String>> confirmarParticipacion(
-            @PathVariable String id, @RequestBody Map<String, String> payload) {
-        String username = payload.get("username");
-        String result = scrimService.confirmarParticipacion(UUID.fromString(id), username);
-        return ResponseEntity.ok(Map.of("mensaje", result));
+            @PathVariable String id, @RequestBody ConfirmParticipationRequest request) {
+        return ResponseEntity.ok(Map.of(MESSAGE_KEY, scrimFacade.confirmParticipation(id, request)));
     }
 
-    // --- NUEVO: COMMAND PATTERN ENDPOINT (CU 6) ---
-    @PostMapping("/{id}/acciones/swap")
-    public ResponseEntity<Map<String, String>> swapJugadores(
-            @PathVariable String id, @RequestBody Map<String, String> payload) {
-
-        Lobby lobby = lobbyRepository.getReferenceById(UUID.fromString(id));
-        Player p1 = playerRepository.findByUsername(payload.get("jugador1"));
-        Player p2 = playerRepository.findByUsername(payload.get("jugador2"));
-
-        ScrimContext ctx = new ScrimContext(lobby, null, null); // Dummy hydration for command action
-
-        SwapJugadoresCommand command = new SwapJugadoresCommand(p1, p2);
-        commandExecutor.executeCommand(command, ctx);
-
-        return ResponseEntity.ok(Map.of("mensaje", "Swap ejecutado con éxito."));
+    @PostMapping("/{id}/acciones/{command}")
+    public ResponseEntity<Map<String, String>> executeCommand(
+            @PathVariable String id,
+            @PathVariable String command,
+            @RequestBody SwapPlayersRequest payload) {
+        try {
+            return ResponseEntity.ok(Map.of(MESSAGE_KEY, scrimFacade.executeCommand(id, command, payload)));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
-    @PostMapping("/startScrim")
-    public ResponseEntity<Scrim> start(@RequestBody ScrimData scrimData) {
-        return ResponseEntity.ok(scrimService.startScrim(scrimData));
+    @PostMapping("/{id}/iniciar")
+    public ResponseEntity<Scrim> start(@PathVariable String id) {
+        return ResponseEntity.ok(scrimFacade.startScrim(id));
     }
 
-    @PostMapping("/{id}/cancelLobby")
+    @PostMapping("/{id}/cancelar")
     public ResponseEntity<Map<String, String>> cancel(@PathVariable String id) {
-        String res = scrimService.cancelLobbyById(UUID.fromString(id));
-        return ResponseEntity.ok(Map.of("mensaje", res));
+        return ResponseEntity.ok(Map.of(MESSAGE_KEY, scrimFacade.cancelScrim(id)));
     }
 
-    @PostMapping("/{id}/finishScrim")
+    @PostMapping("/{id}/finalizar")
     public ResponseEntity<Map<String, String>> end(@PathVariable String id) {
-        String res = scrimService.finishScrimById(UUID.fromString(id));
-        return ResponseEntity.ok(Map.of("mensaje", res));
+        return ResponseEntity.ok(Map.of(MESSAGE_KEY, scrimFacade.finishScrim(id)));
     }
 
-    // --- ACTUALIZADO: CHAIN OF RESPONSIBILITY (CU 11) ---
-    @PostMapping("/reportes")
-    public ResponseEntity<ReportConfirmation> reportPlayer(@RequestBody ReportApplication reportApplication) {
-        return ResponseEntity.status(201).body(reportService.processReport(reportApplication));
+    @PostMapping("/{id}/reportes")
+    public ResponseEntity<ReportConfirmation> reportPlayer(
+            @PathVariable String id,
+            @RequestBody ReportApplication request) {
+        return ResponseEntity.status(201).body(scrimFacade.reportPlayer(id, request));
     }
 
-    @GetMapping("/scrimStatistics")
-    public ResponseEntity<ScrimStatistics> stats(@RequestBody ScrimData scrimStatisticsData) {
-        return ResponseEntity.ok(scrimService.getStatistics(UUID.fromString(scrimStatisticsData.lobbyId())));
+    @PostMapping("/{id}/estadisticas")
+    public ResponseEntity<ScrimStatistics> saveStatistics(
+            @PathVariable String id,
+            @RequestBody CreateStatisticsRequest request) {
+        return ResponseEntity.ok(scrimFacade.saveStatistics(id, request));
     }
 }
