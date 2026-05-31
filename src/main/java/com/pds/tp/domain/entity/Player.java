@@ -33,7 +33,10 @@ public class Player {
     private String region;
     private String platform;
     private String availability;
+    @Setter
     private String visibleRank;
+    @Setter
+    private int averagePingMs;
     private int rank;
     private int gamesPlayed;
     private int wins;
@@ -51,6 +54,7 @@ public class Player {
         this.platform = platform;
         this.availability = availability;
         this.visibleRank = "BRONCE";
+        this.averagePingMs = 60;
         this.rank = 0;
         this.gamesPlayed = 0;
         this.wins = 0;
@@ -88,6 +92,7 @@ public class Player {
                 .append("platform", platform)
                 .append("availability", availability)
                 .append("visibleRank", visibleRank)
+                .append("averagePingMs", averagePingMs)
                 .append("rank", rank)
                 .append("gamesPlayed", gamesPlayed)
                 .append("wins", wins)

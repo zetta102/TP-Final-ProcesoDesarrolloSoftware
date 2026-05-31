@@ -7,5 +7,9 @@ import java.util.List;
 
 public interface MatchmakingStrategy {
     List<Player> seleccionar(List<Player> candidatos, Lobby lobby);
+
+    default int remainingSlots(Lobby lobby) {
+        return lobby.getMaxPlayers() - lobby.getPlayers().size();
+    }
 }
 

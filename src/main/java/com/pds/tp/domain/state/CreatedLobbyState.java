@@ -5,17 +5,17 @@ import com.pds.tp.domain.entity.Player;
 public class CreatedLobbyState implements ScrimState {
     @Override
     public void postular(ScrimContext ctx, Player player, String role) {
-        throw new IllegalStateException("El cupo ya está completo.");
+        throw StateErrorStyle.invalidTransition("El cupo ya está completo.");
     }
 
     @Override
     public void confirmar(ScrimContext ctx, Player player) {
         if (!ctx.getLobby().getPlayers().contains(player)) {
-            throw new IllegalStateException("El jugador no pertenece al lobby.");
+            throw StateErrorStyle.invalidTransition("El jugador no pertenece al lobby.");
         }
         boolean isNewConfirmation = ctx.getLobby().getConfirmedPlayerUsernames().add(player.getUsername());
         if (!isNewConfirmation) {
-            throw new IllegalStateException("El jugador ya había confirmado su participación.");
+            throw StateErrorStyle.invalidTransition("El jugador ya había confirmado su participación.");
         }
 
         if (ctx.getLobby().getConfirmedPlayerUsernames().size() == ctx.getLobby().getMaxPlayers()) {
@@ -25,12 +25,12 @@ public class CreatedLobbyState implements ScrimState {
 
     @Override
     public void iniciar(ScrimContext ctx) {
-        throw new IllegalStateException("Faltan confirmaciones.");
+        throw StateErrorStyle.invalidTransition("Faltan confirmaciones.");
     }
 
     @Override
     public void finalizar(ScrimContext ctx) {
-        throw new IllegalStateException("Aún no ha iniciado.");
+        throw StateErrorStyle.invalidTransition("Aún no ha iniciado.");
     }
 
     @Override

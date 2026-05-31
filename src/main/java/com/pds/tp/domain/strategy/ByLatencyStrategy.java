@@ -11,10 +11,12 @@ import java.util.stream.Collectors;
 public class ByLatencyStrategy implements MatchmakingStrategy {
     @Override
     public List<Player> seleccionar(List<Player> candidatos, Lobby lobby) {
+        int remainingSlots = Math.max(0, remainingSlots(lobby));
+
         return candidatos.stream()
                 .filter(p -> p.getRegion().equalsIgnoreCase(lobby.getRegion()))
-                // In a real app, ping would be dynamically evaluated here
-                .limit(lobby.getMaxPlayers() - lobby.getPlayers().size())
+                .filter(p -> p.getAveragePingMs() <= lobby.getMaxPing())
+                .limit(remainingSlots)
                 .collect(Collectors.toList());
     }
 }

@@ -9,6 +9,7 @@ import com.pds.tp.domain.entity.ScrimStatistics;
 import com.pds.tp.domain.entity.Waitlist;
 import com.pds.tp.domain.entity.WaitlistStatus;
 import com.pds.tp.domain.event.ScrimCreatedEvent;
+import com.pds.tp.domain.shared.RankScale;
 import com.pds.tp.domain.state.ScrimContext;
 import com.pds.tp.domain.state.ScrimStateResolver;
 import com.pds.tp.domain.strategy.MatchmakingStrategy;
@@ -346,23 +347,7 @@ public class ScrimService {
     }
 
     private int compareRanks(String a, String b) {
-        return rankToValue(a) - rankToValue(b);
-    }
-
-    private int rankToValue(String rank) {
-        if (rank == null || rank.isBlank()) {
-            return 0;
-        }
-        return switch (rank.trim().toUpperCase()) {
-            case "HIERRO" -> 1;
-            case "BRONCE" -> 2;
-            case "PLATA" -> 3;
-            case "ORO" -> 4;
-            case "PLATINO" -> 5;
-            case "DIAMANTE" -> 6;
-            case "RADIANTE" -> 7;
-            default -> 0;
-        };
+        return RankScale.toValue(a) - RankScale.toValue(b);
     }
 
     private boolean isSameDay(Lobby lobby, String fecha) {

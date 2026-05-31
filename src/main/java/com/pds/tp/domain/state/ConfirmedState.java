@@ -1,16 +1,14 @@
 package com.pds.tp.domain.state;
 
-import com.pds.tp.domain.entity.Player;
-
-public class ConfirmedState implements ScrimState {
+public class ConfirmedState extends AbstractOperationalState {
     @Override
-    public void postular(ScrimContext ctx, Player player, String role) {
-        throw new IllegalStateException("Cupo completo y confirmado.");
+    protected String postularRejectedMessage() {
+        return "Cupo completo y confirmado.";
     }
 
     @Override
-    public void confirmar(ScrimContext ctx, Player player) {
-        throw new IllegalStateException("Ya están todos confirmados.");
+    protected String confirmarRejectedMessage() {
+        return "Ya están todos confirmados.";
     }
 
     @Override
@@ -19,8 +17,8 @@ public class ConfirmedState implements ScrimState {
     }
 
     @Override
-    public void finalizar(ScrimContext ctx) {
-        throw new IllegalStateException("Debe iniciar antes de finalizar.");
+    protected String finalizarRejectedMessage() {
+        return "Debe iniciar antes de finalizar.";
     }
 
     @Override

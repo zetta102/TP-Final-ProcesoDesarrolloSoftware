@@ -1,10 +1,16 @@
 package com.pds.tp.infrastructure.notification;
 
+import com.pds.tp.domain.entity.Lobby;
+import com.pds.tp.domain.entity.Player;
 import com.pds.tp.domain.event.ScrimCreatedEvent;
 import com.pds.tp.domain.event.ScrimStateChangedEvent;
+import com.pds.tp.infrastructure.repository.LobbyRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
+
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @Slf4j
 @Component
@@ -13,9 +19,11 @@ public class NotificationSubscriber {
     private static final long INITIAL_BACKOFF_MS = 200L;
 
     private final NotifierFactory notifierFactory;
+    private final LobbyRepository lobbyRepository;
 
-    public NotificationSubscriber(NotifierFactory notifierFactory) {
+    public NotificationSubscriber(NotifierFactory notifierFactory, LobbyRepository lobbyRepository) {
         this.notifierFactory = notifierFactory;
+        this.lobbyRepository = lobbyRepository;
     }
 
     @EventListener
@@ -27,11 +35,16 @@ public class NotificationSubscriber {
 
         String message = String.format("El Lobby %s ha cambiado de estado a: %s",
                 event.getLobbyId(), event.getNuevoEstado());
+        NotificationTargets targets = resolveTargets(event.getLobbyId());
 
         // Retry with exponential backoff to tolerate transient provider errors.
         sendWithRetry(discord, "#scrim-updates", message, "DISCORD");
-        sendWithRetry(email, "all-players@scrims.local", message, "EMAIL");
-        sendWithRetry(push, "all-players", message, "PUSH");
+        for (String emailTarget : targets.emailTargets()) {
+            sendWithRetry(email, emailTarget, message, "EMAIL");
+        }
+        for (String pushTarget : targets.pushTargets()) {
+            sendWithRetry(push, pushTarget, message, "PUSH");
+        }
         sendWithRetry(ical, "calendar@scrims.local", message, "ICAL");
     }
 
@@ -71,6 +84,43 @@ public class NotificationSubscriber {
                 attempt++;
             }
         }
+    }
+
+    private NotificationTargets resolveTargets(java.util.UUID lobbyId) {
+        return lobbyRepository.findById(lobbyId)
+                .map(this::toTargets)
+                .orElseGet(() -> new NotificationTargets(
+                        Set.of("all-players@scrims.local"),
+                        Set.of("all-players")
+                ));
+    }
+
+    private NotificationTargets toTargets(Lobby lobby) {
+        Set<String> emailTargets = new LinkedHashSet<>();
+        Set<String> pushTargets = new LinkedHashSet<>();
+
+        if (lobby.getPlayers() != null) {
+            for (Player player : lobby.getPlayers()) {
+                if (player.getEmail() != null && !player.getEmail().isBlank()) {
+                    emailTargets.add(player.getEmail());
+                }
+                if (player.getUsername() != null && !player.getUsername().isBlank()) {
+                    pushTargets.add(player.getUsername());
+                }
+            }
+        }
+
+        if (emailTargets.isEmpty()) {
+            emailTargets.add("all-players@scrims.local");
+        }
+        if (pushTargets.isEmpty()) {
+            pushTargets.add("all-players");
+        }
+
+        return new NotificationTargets(emailTargets, pushTargets);
+    }
+
+    private record NotificationTargets(Set<String> emailTargets, Set<String> pushTargets) {
     }
 }
 

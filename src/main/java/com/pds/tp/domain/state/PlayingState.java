@@ -1,21 +1,19 @@
 package com.pds.tp.domain.state;
 
-import com.pds.tp.domain.entity.Player;
-
-public class PlayingState implements ScrimState {
+public class PlayingState extends AbstractOperationalState {
     @Override
-    public void postular(ScrimContext ctx, Player p, String r) {
-        throw new IllegalStateException("En juego.");
+    protected String postularRejectedMessage() {
+        return "En juego.";
     }
 
     @Override
-    public void confirmar(ScrimContext ctx, Player p) {
-        throw new IllegalStateException("En juego.");
+    protected String confirmarRejectedMessage() {
+        return "En juego.";
     }
 
     @Override
-    public void iniciar(ScrimContext ctx) {
-        throw new IllegalStateException("Ya está en juego.");
+    protected String iniciarRejectedMessage() {
+        return "Ya está en juego.";
     }
 
     @Override
@@ -24,8 +22,8 @@ public class PlayingState implements ScrimState {
     }
 
     @Override
-    public void cancelar(ScrimContext ctx) {
-        throw new IllegalStateException("No se puede cancelar una vez en juego, debe finalizarse.");
+    protected String cancelarRejectedMessage() {
+        return "No se puede cancelar una vez en juego, debe finalizarse.";
     }
 
     @Override
