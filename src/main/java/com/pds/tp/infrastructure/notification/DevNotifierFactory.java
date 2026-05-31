@@ -4,6 +4,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
+/**
+ * Development notifier factory that logs outbound notifications instead of calling providers.
+ */
 @Slf4j
 @Component
 @Profile("dev")
@@ -28,5 +31,3 @@ public class DevNotifierFactory implements NotifierFactory {
         return (user, message) -> log.info("[DEV-ICAL] {} -> {}", user, message);
     }
 }
-
-

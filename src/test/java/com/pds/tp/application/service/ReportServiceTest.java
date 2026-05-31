@@ -18,11 +18,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.List;
 import java.util.UUID;
 
+import static com.pds.tp.support.TestFixtures.lobby;
+import static com.pds.tp.support.TestFixtures.player;
+import static com.pds.tp.support.TestFixtures.setId;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -64,8 +65,8 @@ class ReportServiceTest {
 
     @Test
     void shouldRejectReportsForNonFinishedScrims() {
-        Player reporting = new Player("r1", "r1@test.com", "pwd", "FLEX", "LAS", "PC", "NOCHE");
-        Player reported = new Player("r2", "r2@test.com", "pwd", "FLEX", "LAS", "PC", "NOCHE");
+        Player reporting = player("r1", "r1@test.com", "LAS");
+        Player reported = player("r2", "r2@test.com", "LAS");
         Scrim scrim = buildScrim("EnJuego");
 
         when(playerRepository.findByUsername("r1")).thenReturn(reporting);
@@ -79,8 +80,8 @@ class ReportServiceTest {
 
     @Test
     void shouldPersistAndReturnConfirmationForFinishedScrims() {
-        Player reporting = new Player("r1", "r1@test.com", "pwd", "FLEX", "LAS", "PC", "NOCHE");
-        Player reported = new Player("r2", "r2@test.com", "pwd", "FLEX", "LAS", "PC", "NOCHE");
+        Player reporting = player("r1", "r1@test.com", "LAS");
+        Player reported = player("r2", "r2@test.com", "LAS");
         Scrim scrim = buildScrim("Finalizado");
 
         when(playerRepository.findByUsername("r1")).thenReturn(reporting);
@@ -104,36 +105,8 @@ class ReportServiceTest {
     }
 
     private Scrim buildScrim(String status) {
-        Player host = new Player("host", "host@test.com", "pwd", "FLEX", "LAS", "PC", "NOCHE");
-        Lobby lobby = new Lobby(
-                LocalDateTime.now().plusHours(1),
-                10,
-                1,
-                "LAS",
-                "BRONCE",
-                "DIAMANTE",
-                80,
-                "VALORANT",
-                "HAVEN",
-                "Buscando",
-                host,
-                new ArrayList<>() {{
-                    add(host);
-                }},
-                new HashSet<>()
-        );
-
-        return new Scrim(lobby, "VALORANT", "HAVEN", status);
-    }
-
-    private void setId(Report report, UUID id) {
-        try {
-            var field = Report.class.getDeclaredField("id");
-            field.setAccessible(true);
-            field.set(report, id);
-        } catch (ReflectiveOperationException ex) {
-            throw new IllegalStateException(ex);
-        }
+        Player host = player("host", "host@test.com", "LAS");
+        Lobby scrimLobby = lobby(host, 1, 10, "Buscando", "BRONCE", "DIAMANTE", "HAVEN", List.of(host));
+        return new Scrim(scrimLobby, "VALORANT", "HAVEN", status);
     }
 }
-

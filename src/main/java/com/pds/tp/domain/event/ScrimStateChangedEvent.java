@@ -5,6 +5,9 @@ import org.springframework.context.ApplicationEvent;
 
 import java.util.UUID;
 
+/**
+ * Event published every time a lobby changes lifecycle state.
+ */
 @Getter
 public class ScrimStateChangedEvent extends ApplicationEvent {
     private final UUID lobbyId;
@@ -17,4 +20,3 @@ public class ScrimStateChangedEvent extends ApplicationEvent {
     }
 
 }
-

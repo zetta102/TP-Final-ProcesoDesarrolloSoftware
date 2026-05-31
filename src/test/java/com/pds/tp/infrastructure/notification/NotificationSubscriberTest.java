@@ -9,12 +9,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static com.pds.tp.support.TestFixtures.lobby;
+import static com.pds.tp.support.TestFixtures.player;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
@@ -44,34 +44,17 @@ class NotificationSubscriberTest {
 
     @Test
     void shouldNotifyEachLobbyMemberWhenAllPlayersConfirmed() {
-        Player host = new Player("host", "host@test.com", "pwd", "FLEX", "LAS", "PC", "NOCHE");
-        Player guest = new Player("guest", "guest@test.com", "pwd", "FLEX", "LAS", "PC", "NOCHE");
+        Player host = player("host", "host@test.com", "LAS");
+        Player guest = player("guest", "guest@test.com", "LAS");
 
         UUID lobbyId = UUID.randomUUID();
-        Lobby lobby = new Lobby(
-                LocalDateTime.now().plusHours(1),
-                2,
-                1,
-                "LAS",
-                "BRONCE",
-                "ORO",
-                80,
-                "VALORANT",
-                "HAVEN",
-                "Confirmado",
-                host,
-                new ArrayList<>() {{
-                    add(host);
-                    add(guest);
-                }},
-                new HashSet<>()
-        );
+        Lobby scrimLobby = lobby(host, 1, 2, "Confirmado", "BRONCE", "ORO", "HAVEN", List.of(host, guest));
 
         when(notifierFactory.createDiscordNotifier()).thenReturn(discordNotifier);
         when(notifierFactory.createEmailNotifier()).thenReturn(emailNotifier);
         when(notifierFactory.createPushNotifier()).thenReturn(pushNotifier);
         when(notifierFactory.createICalNotifier()).thenReturn(iCalNotifier);
-        when(lobbyRepository.findById(lobbyId)).thenReturn(Optional.of(lobby));
+        when(lobbyRepository.findById(lobbyId)).thenReturn(Optional.of(scrimLobby));
 
         NotificationSubscriber subscriber = new NotificationSubscriber(notifierFactory, lobbyRepository);
         subscriber.onDomainEvent(new ScrimStateChangedEvent(this, lobbyId, "Confirmado"));
@@ -84,4 +67,3 @@ class NotificationSubscriberTest {
         verify(iCalNotifier, times(1)).sendNotification(eq("calendar@scrims.local"), contains("Confirmado"));
     }
 }
-

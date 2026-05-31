@@ -5,6 +5,9 @@ import com.pds.tp.domain.entity.Player;
 
 import java.util.List;
 
+/**
+ * Strategy abstraction for selecting players that can fill a lobby.
+ */
 public interface MatchmakingStrategy {
     List<Player> seleccionar(List<Player> candidatos, Lobby lobby);
 
@@ -12,4 +15,3 @@ public interface MatchmakingStrategy {
         return lobby.getMaxPlayers() - lobby.getPlayers().size();
     }
 }
-

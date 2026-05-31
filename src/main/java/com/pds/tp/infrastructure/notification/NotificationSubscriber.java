@@ -12,6 +12,9 @@ import org.springframework.stereotype.Component;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+/**
+ * Observer that reacts to scrim domain events and fans them out through all enabled channels.
+ */
 @Slf4j
 @Component
 public class NotificationSubscriber {
@@ -37,7 +40,7 @@ public class NotificationSubscriber {
                 event.getLobbyId(), event.getNuevoEstado());
         NotificationTargets targets = resolveTargets(event.getLobbyId());
 
-        // Retry with exponential backoff to tolerate transient provider errors.
+        // Send one event through all channels, then per-user targets for personalized channels.
         sendWithRetry(discord, "#scrim-updates", message, "DISCORD");
         for (String emailTarget : targets.emailTargets()) {
             sendWithRetry(email, emailTarget, message, "EMAIL");
@@ -110,6 +113,7 @@ public class NotificationSubscriber {
             }
         }
 
+        // Fall back to broadcast targets so events are not dropped when a lobby has incomplete user data.
         if (emailTargets.isEmpty()) {
             emailTargets.add("all-players@scrims.local");
         }
@@ -123,4 +127,3 @@ public class NotificationSubscriber {
     private record NotificationTargets(Set<String> emailTargets, Set<String> pushTargets) {
     }
 }
-

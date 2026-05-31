@@ -2,6 +2,9 @@ package com.pds.tp.domain.state;
 
 import com.pds.tp.domain.entity.Player;
 
+/**
+ * Base class for terminal states where lifecycle operations are no longer allowed.
+ */
 public abstract class AbstractTerminalState implements ScrimState {
 
     @Override
@@ -41,4 +44,3 @@ public abstract class AbstractTerminalState implements ScrimState {
         return defaultTerminalMessage();
     }
 }
-

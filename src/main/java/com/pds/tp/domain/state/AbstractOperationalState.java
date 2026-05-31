@@ -2,6 +2,10 @@ package com.pds.tp.domain.state;
 
 import com.pds.tp.domain.entity.Player;
 
+/**
+ * Base class for non-terminal states where only specific transitions are allowed.
+ * Unsupported operations fail fast with a consistent message format.
+ */
 public abstract class AbstractOperationalState implements ScrimState {
 
     @Override
@@ -53,4 +57,3 @@ public abstract class AbstractOperationalState implements ScrimState {
         return StateErrorStyle.genericRejectedOperation(getStatusName());
     }
 }
-

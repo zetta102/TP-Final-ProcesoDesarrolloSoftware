@@ -7,6 +7,9 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 
+/**
+ * Builder used by services to assemble a Lobby/Scrim setup with business defaults.
+ */
 public class ScrimBuilder {
     private LocalDateTime scheduledTime = LocalDateTime.now();
     private int maxPlayers;
@@ -90,7 +93,7 @@ public class ScrimBuilder {
                 host,
                 initialPlayers,
                 new HashSet<>()
+
         );
     }
 }
-

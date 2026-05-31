@@ -5,6 +5,9 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
+/**
+ * Production-oriented notifier factory that returns concrete provider adapters.
+ */
 @Slf4j
 @Component
 @Primary
@@ -47,4 +50,3 @@ public class ProdNotifierFactory implements NotifierFactory {
         return iCalAdapter;
     }
 }
-

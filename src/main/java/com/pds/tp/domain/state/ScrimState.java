@@ -2,6 +2,9 @@ package com.pds.tp.domain.state;
 
 import com.pds.tp.domain.entity.Player;
 
+/**
+ * State contract for scrim lifecycle transitions.
+ */
 public interface ScrimState {
     void postular(ScrimContext ctx, Player player, String role);
 
@@ -15,4 +18,3 @@ public interface ScrimState {
 
     String getStatusName();
 }
-

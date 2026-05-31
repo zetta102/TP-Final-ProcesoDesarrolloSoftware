@@ -6,6 +6,10 @@ import com.pds.tp.domain.event.ScrimStateChangedEvent;
 import lombok.Getter;
 import org.springframework.context.ApplicationEventPublisher;
 
+/**
+ * State pattern context for a Lobby: delegates actions to the current ScrimState
+ * and keeps the persisted lobby status synchronized after each transition.
+ */
 @Getter
 public class ScrimContext {
     private final Lobby lobby;
@@ -21,7 +25,7 @@ public class ScrimContext {
     public void setState(ScrimState state) {
         this.state = state;
         this.lobby.setStatus(state.getStatusName());
-        // Automatically publish domain event whenever state changes
+        // Emit a domain event so subscribers can notify users on each status transition.
         if (eventPublisher != null) {
             eventPublisher.publishEvent(new ScrimStateChangedEvent(this, lobby.getId(), state.getStatusName()));
         }
@@ -47,4 +51,3 @@ public class ScrimContext {
         state.cancelar(this);
     }
 }
-

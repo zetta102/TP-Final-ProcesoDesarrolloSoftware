@@ -5,6 +5,9 @@ import org.springframework.context.ApplicationEvent;
 
 import java.util.UUID;
 
+/**
+ * Event published when a new lobby/scrim is created.
+ */
 @Getter
 public class ScrimCreatedEvent extends ApplicationEvent {
     private final UUID lobbyId;
@@ -18,4 +21,3 @@ public class ScrimCreatedEvent extends ApplicationEvent {
         this.region = region;
     }
 }
-

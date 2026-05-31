@@ -3,6 +3,9 @@ package com.pds.tp.domain.moderation;
 import com.pds.tp.domain.entity.Report;
 import lombok.Setter;
 
+/**
+ * Chain of Responsibility node for report moderation.
+ */
 @Setter
 public abstract class ModerationNode {
     protected ModerationNode next;
@@ -15,4 +18,3 @@ public abstract class ModerationNode {
         }
     }
 }
-

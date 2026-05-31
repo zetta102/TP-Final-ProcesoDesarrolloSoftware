@@ -11,6 +11,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import static com.pds.tp.support.TestFixtures.player;
+import static com.pds.tp.support.TestFixtures.setField;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -58,10 +60,11 @@ class AuthServiceTest {
 
     @Test
     void shouldAuthenticateByEmailWhenVerified() {
-        Player player = new Player("neo", "neo@test.com", "hashed", "FLEX", "LAS", "PC", "NOCHE");
-        player.setEmailVerificationStatus(EmailVerificationStatus.VERIFICADO);
+        Player verifiedPlayer = player("neo", "neo@test.com", "LAS");
+        verifiedPlayer.setEmailVerificationStatus(EmailVerificationStatus.VERIFICADO);
+        setField(verifiedPlayer, "password", "hashed");
 
-        when(playerRepository.findByEmail("neo@test.com")).thenReturn(player);
+        when(playerRepository.findByEmail("neo@test.com")).thenReturn(verifiedPlayer);
         when(passwordEncoder.matches("plain", "hashed")).thenReturn(true);
 
         assertTrue(authService.authenticate("neo@test.com", "plain"));
@@ -69,10 +72,11 @@ class AuthServiceTest {
 
     @Test
     void shouldFailAuthenticationWhenEmailNotVerified() {
-        Player player = new Player("neo", "neo@test.com", "hashed", "FLEX", "LAS", "PC", "NOCHE");
-        player.setEmailVerificationStatus(EmailVerificationStatus.PENDIENTE);
+        Player pendingPlayer = player("neo", "neo@test.com", "LAS");
+        pendingPlayer.setEmailVerificationStatus(EmailVerificationStatus.PENDIENTE);
+        setField(pendingPlayer, "password", "hashed");
 
-        when(playerRepository.findByUsername("neo")).thenReturn(player);
+        when(playerRepository.findByUsername("neo")).thenReturn(pendingPlayer);
 
         assertFalse(authService.authenticate("neo", "plain"));
         verify(passwordEncoder, never()).matches(any(), any());
@@ -80,16 +84,17 @@ class AuthServiceTest {
 
     @Test
     void shouldVerifyEmail() {
-        Player player = new Player("neo", "neo@test.com", "hashed", "FLEX", "LAS", "PC", "NOCHE");
-        player.setEmailVerificationStatus(EmailVerificationStatus.PENDIENTE);
+        Player pendingPlayer = player("neo", "neo@test.com", "LAS");
+        pendingPlayer.setEmailVerificationStatus(EmailVerificationStatus.PENDIENTE);
+        setField(pendingPlayer, "password", "hashed");
 
-        when(playerRepository.findByUsername("neo")).thenReturn(player);
+        when(playerRepository.findByUsername("neo")).thenReturn(pendingPlayer);
 
         String result = authService.verifyEmail("neo");
 
         assertEquals("Email verified successfully.", result);
-        assertEquals(EmailVerificationStatus.VERIFICADO, player.getEmailVerificationStatus());
-        verify(playerRepository).save(player);
+        assertEquals(EmailVerificationStatus.VERIFICADO, pendingPlayer.getEmailVerificationStatus());
+        verify(playerRepository).save(pendingPlayer);
     }
 }
 

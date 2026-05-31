@@ -6,6 +6,9 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayDeque;
 import java.util.Deque;
 
+/**
+ * Executes commands and keeps an in-memory stack for one-step-at-a-time undo.
+ */
 @Component
 public class CommandExecutor {
     private final Deque<ScrimCommand> history = new ArrayDeque<>();
@@ -22,4 +25,3 @@ public class CommandExecutor {
         }
     }
 }
-
