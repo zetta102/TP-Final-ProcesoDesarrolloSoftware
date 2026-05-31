@@ -8,11 +8,15 @@ class NotifierFactoryTest {
 
     @Test
     void prodFactoryShouldCreateAllNotifiers() {
-        ProdNotifierFactory factory = new ProdNotifierFactory(new DiscordAdapter(), new SendGridAdapter());
+        ProdNotifierFactory factory = new ProdNotifierFactory(
+                new DiscordAdapter(),
+                new SendGridAdapter(),
+                new ICalAdapter());
 
         assertNotNull(factory.createDiscordNotifier());
         assertNotNull(factory.createEmailNotifier());
         assertNotNull(factory.createPushNotifier());
+        assertNotNull(factory.createICalNotifier());
     }
 }
 

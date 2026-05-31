@@ -23,6 +23,7 @@ public class NotificationSubscriber {
         Notifier discord = notifierFactory.createDiscordNotifier();
         Notifier email = notifierFactory.createEmailNotifier();
         Notifier push = notifierFactory.createPushNotifier();
+        Notifier ical = notifierFactory.createICalNotifier();
 
         String message = String.format("El Lobby %s ha cambiado de estado a: %s",
                 event.getLobbyId(), event.getNuevoEstado());
@@ -31,6 +32,7 @@ public class NotificationSubscriber {
         sendWithRetry(discord, "#scrim-updates", message, "DISCORD");
         sendWithRetry(email, "all-players@scrims.local", message, "EMAIL");
         sendWithRetry(push, "all-players", message, "PUSH");
+        sendWithRetry(ical, "calendar@scrims.local", message, "ICAL");
     }
 
     @EventListener
@@ -40,12 +42,14 @@ public class NotificationSubscriber {
         sendWithRetry(notifierFactory.createDiscordNotifier(), "#scrim-updates", message, "DISCORD");
         sendWithRetry(notifierFactory.createEmailNotifier(), "all-players@scrims.local", message, "EMAIL");
         sendWithRetry(notifierFactory.createPushNotifier(), "all-players", message, "PUSH");
+        sendWithRetry(notifierFactory.createICalNotifier(), "calendar@scrims.local", message, "ICAL");
     }
 
     private void sendWithRetry(Notifier notifier, String target, String message, String channel) {
         long backoff = INITIAL_BACKOFF_MS;
+        int attempt = 1;
 
-        for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+        while (attempt <= MAX_ATTEMPTS) {
             try {
                 notifier.sendNotification(target, message);
                 return;
@@ -64,6 +68,7 @@ public class NotificationSubscriber {
                     return;
                 }
                 backoff *= 2;
+                attempt++;
             }
         }
     }

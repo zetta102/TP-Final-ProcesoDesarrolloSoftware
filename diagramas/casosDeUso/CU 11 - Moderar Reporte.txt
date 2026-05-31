@@ -1,32 +1,37 @@
 @startuml
-actor "Jugador" as Player
-boundary "API Gateway" as API
+actor "Moderador" as Mod
 control "ReportService" as Service
-control "AutoResolverNode" as Node1
-control "BotAnalyzerNode" as Node2
-control "HumanModNode" as Node3
+control "ModerationChain" as Chain
+control "AutoResolverNode" as Auto
+control "BotAnalyzerNode" as Bot
+control "HumanModNode" as Human
+entity "Report" as Model
 database "PostgreSQL" as DB
 
-Player -> Service : POST /api/reportes (payload) submitReport(dto)
-Service -> DB : save(new ReporteConducta(PENDIENTE))
+Mod -> Service : POST /api/scrims/{id}/reportes
+Service -> Service : validateReport(reportingPlayer, reportedPlayer)
+Service -> Chain : initiateChain(report)
 
-Service -> Node1 : handleRequest(reporte)
-
-alt AFK Confirmado por Logs
-    Node1 -> DB : updateStrikes(reportado, +1)
-    Node1 -> DB : updateStatus(RESUELTO_AUTO)
-else Evidencia Insuficiente
-    Node1 -> Node2 : passToNext(reporte)
-    
-    alt Regex encuentra Toxicidad en Chat
-        Node2 -> DB : applyChatRestriction(reportado)
-        Node2 -> DB : updateStatus(RESUELTO_BOT)
-    else Contexto Complejo
-        Node2 -> Node3 : passToNext(reporte)
-        Node3 -> DB : updateStatus(ESCALADO_HUMANO)
-        Node3 -> "Admin Dashboard" : Enqueue Ticket
+Chain -> Auto : handle(report)
+Auto -> Auto : checks AFK/LEAVER in logs
+alt Auto-resolvable
+    Auto -> Model : markResolved("ADMIN_AUTO")
+    Auto -> DB : save(report)
+    DB --> Service : ok
+else Escalate to Bot
+    Auto -> Bot : passToNext(report)
+    Bot -> Bot : analyzePatterns (repeat offender?)
+    alt Pattern detected
+        Bot -> Model : markResolved("BOT_SANCTIONED")
+        Bot -> DB : save(report)
+    else Escalate to Human
+        Bot -> Human : passToNext(report)
+        Human -> Human : manualReview + decisionMaking
+        Human -> Model : markResolved("HUMAN_MOD", sanction)
+        Human -> DB : save(report)
     end
 end
 
-Service --> Player : 202 Accepted UI: Reporte bajo revisión
+Service --> Mod : ReportConfirmation (estado, accion)
+
 @enduml

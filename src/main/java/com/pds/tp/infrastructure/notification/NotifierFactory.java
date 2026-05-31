@@ -6,6 +6,8 @@ public interface NotifierFactory {
     Notifier createEmailNotifier();
 
     Notifier createDiscordNotifier();
+
+    Notifier createICalNotifier();
 }
 
 

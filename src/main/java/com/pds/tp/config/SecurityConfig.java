@@ -9,16 +9,20 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
+import org.springframework.security.web.csrf.CsrfFilter;
 
 @Configuration
 public class SecurityConfig {
     private final HeaderRoleAuthenticationFilter headerRoleAuthenticationFilter;
     private final RateLimitingFilter rateLimitingFilter;
+    private final AuditLogFilter auditLogFilter;
 
     public SecurityConfig(HeaderRoleAuthenticationFilter headerRoleAuthenticationFilter,
-                          RateLimitingFilter rateLimitingFilter) {
+                          RateLimitingFilter rateLimitingFilter,
+                          AuditLogFilter auditLogFilter) {
         this.headerRoleAuthenticationFilter = headerRoleAuthenticationFilter;
         this.rateLimitingFilter = rateLimitingFilter;
+        this.auditLogFilter = auditLogFilter;
     }
 
     @Bean
@@ -48,6 +52,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(AbstractHttpConfigurer::disable)
+                .addFilterBefore(auditLogFilter, CsrfFilter.class)
                 .addFilterBefore(rateLimitingFilter, AnonymousAuthenticationFilter.class)
                 .addFilterBefore(headerRoleAuthenticationFilter, AnonymousAuthenticationFilter.class);
 

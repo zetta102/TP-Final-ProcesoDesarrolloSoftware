@@ -22,6 +22,11 @@ public class DevNotifierFactory implements NotifierFactory {
     public Notifier createDiscordNotifier() {
         return (user, message) -> log.info("[DEV-DISCORD] {} -> {}", user, message);
     }
+
+    @Override
+    public Notifier createICalNotifier() {
+        return (user, message) -> log.info("[DEV-ICAL] {} -> {}", user, message);
+    }
 }
 
 

@@ -21,7 +21,7 @@ public class SearchingState implements ScrimState {
             throw new IllegalStateException("El jugador ya está en el lobby.");
         }
         if (ctx.getLobby().getPlayers().size() >= ctx.getLobby().getMaxPlayers()) {
-            throw new IllegalStateException("El lobby ya está lleno.");
+            throw new IllegalStateException("El lobby ya esta lleno.");
         }
         if (!player.getRegion().equalsIgnoreCase(ctx.getLobby().getRegion())) {
             throw new IllegalStateException("La región del jugador no coincide con la del scrim.");
