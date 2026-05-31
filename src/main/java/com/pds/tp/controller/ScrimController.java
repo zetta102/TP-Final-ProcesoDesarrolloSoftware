@@ -1,9 +1,13 @@
 package com.pds.tp.controller;
 
 import com.pds.tp.entity.Lobby;
+import com.pds.tp.entity.Player;
 import com.pds.tp.entity.Scrim;
 import com.pds.tp.entity.ScrimStatistics;
 import com.pds.tp.model.*;
+import com.pds.tp.repository.LobbyRepository;
+import com.pds.tp.repository.PlayerRepository;
+import com.pds.tp.service.ReportService;
 import com.pds.tp.service.ScrimService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,10 +19,21 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/v1/api/scrims")
 public class ScrimController {
-    private final ScrimService scrimService;
 
-    public ScrimController(ScrimService scrimService) {
+    private final ScrimService scrimService;
+    private final ReportService reportService;
+    private final CommandExecutor commandExecutor;
+    private final LobbyRepository lobbyRepository;
+    private final PlayerRepository playerRepository;
+
+    public ScrimController(ScrimService scrimService, ReportService reportService,
+                           CommandExecutor commandExecutor, LobbyRepository lobbyRepository,
+                           PlayerRepository playerRepository) {
         this.scrimService = scrimService;
+        this.reportService = reportService;
+        this.commandExecutor = commandExecutor;
+        this.lobbyRepository = lobbyRepository;
+        this.playerRepository = playerRepository;
     }
 
     @PostMapping("/createLobby")
@@ -36,14 +51,29 @@ public class ScrimController {
         return ResponseEntity.ok(scrimService.applyToLobby(lobbyApplication));
     }
 
-    // MISSING ENDPOINT ADDED: Confirmación requerida antes de EnJuego
     @PostMapping("/{id}/confirmaciones")
     public ResponseEntity<Map<String, String>> confirmarParticipacion(
-            @PathVariable String id,
-            @RequestBody Map<String, String> payload) {
+            @PathVariable String id, @RequestBody Map<String, String> payload) {
         String username = payload.get("username");
         String result = scrimService.confirmarParticipacion(UUID.fromString(id), username);
         return ResponseEntity.ok(Map.of("mensaje", result));
+    }
+
+    // --- NUEVO: COMMAND PATTERN ENDPOINT (CU 6) ---
+    @PostMapping("/{id}/acciones/swap")
+    public ResponseEntity<Map<String, String>> swapJugadores(
+            @PathVariable String id, @RequestBody Map<String, String> payload) {
+
+        Lobby lobby = lobbyRepository.getReferenceById(UUID.fromString(id));
+        Player p1 = playerRepository.findByUsername(payload.get("jugador1"));
+        Player p2 = playerRepository.findByUsername(payload.get("jugador2"));
+
+        ScrimContext ctx = new ScrimContext(lobby, null, null); // Dummy hydration for command action
+
+        SwapJugadoresCommand command = new SwapJugadoresCommand(p1, p2);
+        commandExecutor.executeCommand(command, ctx);
+
+        return ResponseEntity.ok(Map.of("mensaje", "Swap ejecutado con éxito."));
     }
 
     @PostMapping("/startScrim")
@@ -63,9 +93,10 @@ public class ScrimController {
         return ResponseEntity.ok(Map.of("mensaje", res));
     }
 
+    // --- ACTUALIZADO: CHAIN OF RESPONSIBILITY (CU 11) ---
     @PostMapping("/reportes")
     public ResponseEntity<ReportConfirmation> reportPlayer(@RequestBody ReportApplication reportApplication) {
-        return ResponseEntity.status(201).body(scrimService.reportPlayer(reportApplication));
+        return ResponseEntity.status(201).body(reportService.processReport(reportApplication));
     }
 
     @GetMapping("/scrimStatistics")

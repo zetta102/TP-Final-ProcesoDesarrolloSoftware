@@ -1,24 +1,32 @@
 package com.pds.tp.model;
 
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
+@Primary
 public class ProdNotifierFactory implements NotifierFactory {
+
+    private final DiscordAdapter discordAdapter;
+    private final SendGridAdapter sendGridAdapter;
+
+    public ProdNotifierFactory(DiscordAdapter discordAdapter, SendGridAdapter sendGridAdapter) {
+        this.discordAdapter = discordAdapter;
+        this.sendGridAdapter = sendGridAdapter;
+    }
 
     @Override
     public Notifier createPushNotifier() {
-        return (user, message) -> log.info("[PUSH to {}] Payload: {}", user, message);
+        return (user, message) -> System.out.println("[Firebase Push Adapter Stub] " + user + " -> " + message);
     }
 
     @Override
     public Notifier createEmailNotifier() {
-        return (user, message) -> log.info("[EMAIL to {}] Payload: {}", user, message);
+        return sendGridAdapter;
     }
 
     @Override
     public Notifier createDiscordNotifier() {
-        return (channel, message) -> log.info("[DISCORD WEBHOOK: {}] Payload: {}", channel, message);
+        return discordAdapter;
     }
 }
