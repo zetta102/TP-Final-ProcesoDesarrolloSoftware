@@ -19,9 +19,9 @@ class OperationalScrimStateTest {
         ScrimContext context = new ScrimContext(buildLobby(), new ConfirmedState(), null);
         Player player = new Player("p1", "p1@test.com", "pwd", "FLEX", "LAS", "PC", "NOCHE");
 
-        assertEquals("Cupo completo y confirmado.", assertThrows(IllegalStateException.class, () -> context.postular(player, "FLEX")).getMessage());
-        assertEquals("Ya están todos confirmados.", assertThrows(IllegalStateException.class, () -> context.confirmar(player)).getMessage());
-        assertEquals("Debe iniciar antes de finalizar.", assertThrows(IllegalStateException.class, context::finalizar).getMessage());
+        assertEquals("Lobby is full and already confirmed.", assertThrows(IllegalStateException.class, () -> context.postular(player, "FLEX")).getMessage());
+        assertEquals("All players are already confirmed.", assertThrows(IllegalStateException.class, () -> context.confirmar(player)).getMessage());
+        assertEquals("Scrim must start before it can be finished.", assertThrows(IllegalStateException.class, context::finalizar).getMessage());
 
         context.cancelar();
         assertEquals("Cancelado", context.getState().getStatusName());
@@ -32,10 +32,10 @@ class OperationalScrimStateTest {
         ScrimContext context = new ScrimContext(buildLobby(), new PlayingState(), null);
         Player player = new Player("p2", "p2@test.com", "pwd", "FLEX", "LAS", "PC", "NOCHE");
 
-        assertEquals("En juego.", assertThrows(IllegalStateException.class, () -> context.postular(player, "FLEX")).getMessage());
-        assertEquals("En juego.", assertThrows(IllegalStateException.class, () -> context.confirmar(player)).getMessage());
-        assertEquals("Ya está en juego.", assertThrows(IllegalStateException.class, context::iniciar).getMessage());
-        assertEquals("No se puede cancelar una vez en juego, debe finalizarse.", assertThrows(IllegalStateException.class, context::cancelar).getMessage());
+        assertEquals("Scrim is in progress.", assertThrows(IllegalStateException.class, () -> context.postular(player, "FLEX")).getMessage());
+        assertEquals("Scrim is in progress.", assertThrows(IllegalStateException.class, () -> context.confirmar(player)).getMessage());
+        assertEquals("Scrim has already started.", assertThrows(IllegalStateException.class, context::iniciar).getMessage());
+        assertEquals("Cannot cancel a scrim that is already in progress; it must be finished.", assertThrows(IllegalStateException.class, context::cancelar).getMessage());
 
         context.finalizar();
         assertEquals("Finalizado", context.getState().getStatusName());

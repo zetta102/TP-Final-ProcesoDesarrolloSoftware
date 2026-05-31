@@ -14,7 +14,7 @@ import java.util.Map;
 @RestController
 @RequestMapping({"/api/scrims", "/v1/api/scrims"})
 public class ScrimController {
-    private static final String MESSAGE_KEY = "mensaje";
+    private static final String MESSAGE_KEY = "message";
 
     private final ScrimFacade scrimFacade;
 
@@ -29,13 +29,13 @@ public class ScrimController {
 
     @GetMapping
     public ResponseEntity<List<Lobby>> find(
-            @RequestParam(required = false) String juego,
+            @RequestParam(name = "juego", required = false) String game,
             @RequestParam(required = false) String region,
-            @RequestParam(required = false) String rangoMin,
-            @RequestParam(required = false) String rangoMax,
-            @RequestParam(required = false) String fecha,
-            @RequestParam(required = false) Integer latenciaMax) {
-        return ResponseEntity.ok(scrimFacade.findScrims(juego, region, rangoMin, rangoMax, fecha, latenciaMax));
+            @RequestParam(name = "rangoMin", required = false) String minRank,
+            @RequestParam(name = "rangoMax", required = false) String maxRank,
+            @RequestParam(name = "fecha", required = false) String date,
+            @RequestParam(name = "latenciaMax", required = false) Integer maxLatency) {
+        return ResponseEntity.ok(scrimFacade.findScrims(game, region, minRank, maxRank, date, maxLatency));
     }
 
     @PostMapping("/{id}/postulaciones")
@@ -44,9 +44,9 @@ public class ScrimController {
     }
 
     @PostMapping("/{id}/confirmaciones")
-    public ResponseEntity<Map<String, String>> confirmarParticipacion(
+    public ResponseEntity<Map<String, String>> confirmParticipation(
             @PathVariable String id, @RequestBody ConfirmParticipationRequest request) {
-        return ResponseEntity.ok(Map.of(MESSAGE_KEY, scrimFacade.confirmParticipation(id, request)));
+        return ResponseEntity.ok(messageBody(scrimFacade.confirmParticipation(id, request)));
     }
 
     @PostMapping("/{id}/acciones/{command}")
@@ -55,7 +55,7 @@ public class ScrimController {
             @PathVariable String command,
             @RequestBody SwapPlayersRequest payload) {
         try {
-            return ResponseEntity.ok(Map.of(MESSAGE_KEY, scrimFacade.executeCommand(id, command, payload)));
+            return ResponseEntity.ok(messageBody(scrimFacade.executeCommand(id, command, payload)));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
@@ -68,12 +68,12 @@ public class ScrimController {
 
     @PostMapping("/{id}/cancelar")
     public ResponseEntity<Map<String, String>> cancel(@PathVariable String id) {
-        return ResponseEntity.ok(Map.of(MESSAGE_KEY, scrimFacade.cancelScrim(id)));
+        return ResponseEntity.ok(messageBody(scrimFacade.cancelScrim(id)));
     }
 
     @PostMapping("/{id}/finalizar")
     public ResponseEntity<Map<String, String>> end(@PathVariable String id) {
-        return ResponseEntity.ok(Map.of(MESSAGE_KEY, scrimFacade.finishScrim(id)));
+        return ResponseEntity.ok(messageBody(scrimFacade.finishScrim(id)));
     }
 
     @PostMapping("/{id}/reportes")
@@ -88,5 +88,9 @@ public class ScrimController {
             @PathVariable String id,
             @RequestBody CreateStatisticsRequest request) {
         return ResponseEntity.ok(scrimFacade.saveStatistics(id, request));
+    }
+
+    private Map<String, String> messageBody(String message) {
+        return Map.of(MESSAGE_KEY, message, "mensaje", message);
     }
 }

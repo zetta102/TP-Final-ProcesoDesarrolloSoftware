@@ -1,7 +1,7 @@
 package com.pds.tp.application.facade;
 
 import com.pds.tp.application.command.CommandExecutor;
-import com.pds.tp.application.command.SwapJugadoresCommand;
+import com.pds.tp.application.command.SwapPlayersCommand;
 import com.pds.tp.application.dto.*;
 import com.pds.tp.application.service.ReportService;
 import com.pds.tp.application.service.ScrimService;
@@ -45,8 +45,8 @@ public class ScrimFacade {
         return scrimService.createScrim(request);
     }
 
-    public List<Lobby> findScrims(String juego, String region, String rangoMin, String rangoMax, String fecha, Integer latenciaMax) {
-        FindLobbyData findLobbyData = new FindLobbyData(juego, region, rangoMin, rangoMax, fecha, latenciaMax);
+    public List<Lobby> findScrims(String game, String region, String minRank, String maxRank, String date, Integer maxLatency) {
+        FindLobbyData findLobbyData = new FindLobbyData(game, region, minRank, maxRank, date, maxLatency);
         return scrimService.findActiveLobbiesByRegionAndRank(findLobbyData);
     }
 
@@ -56,23 +56,23 @@ public class ScrimFacade {
     }
 
     public String confirmParticipation(String id, ConfirmParticipationRequest request) {
-        return scrimService.confirmarParticipacion(UUID.fromString(id), request.username());
+        return scrimService.confirmParticipation(UUID.fromString(id), request.username());
     }
 
     public String executeCommand(String id, String command, SwapPlayersRequest request) {
         if (!"swap".equals(command)) {
-            throw new IllegalArgumentException("Comando no soportado: " + command);
+            throw new IllegalArgumentException("Unsupported command: " + command);
         }
 
         Lobby lobby = lobbyRepository.getReferenceById(UUID.fromString(id));
-        Player p1 = playerRepository.findByUsername(request.jugador1());
-        Player p2 = playerRepository.findByUsername(request.jugador2());
+        Player p1 = playerRepository.findByUsername(request.firstPlayerUsername());
+        Player p2 = playerRepository.findByUsername(request.secondPlayerUsername());
 
         ScrimContext context = new ScrimContext(lobby, stateResolver.resolve(lobby.getStatus()), null);
-        SwapJugadoresCommand swapCommand = new SwapJugadoresCommand(p1, p2);
+        SwapPlayersCommand swapCommand = new SwapPlayersCommand(p1, p2);
         commandExecutor.executeCommand(swapCommand, context);
 
-        return "Swap ejecutado con exito.";
+        return "Swap executed successfully.";
     }
 
     public Scrim startScrim(String id) {

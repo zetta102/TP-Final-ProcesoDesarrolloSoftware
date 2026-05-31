@@ -3,17 +3,17 @@ package com.pds.tp.domain.state;
 public class PlayingState extends AbstractOperationalState {
     @Override
     protected String postularRejectedMessage() {
-        return "En juego.";
+        return "Scrim is in progress.";
     }
 
     @Override
     protected String confirmarRejectedMessage() {
-        return "En juego.";
+        return "Scrim is in progress.";
     }
 
     @Override
     protected String iniciarRejectedMessage() {
-        return "Ya está en juego.";
+        return "Scrim has already started.";
     }
 
     @Override
@@ -23,7 +23,7 @@ public class PlayingState extends AbstractOperationalState {
 
     @Override
     protected String cancelarRejectedMessage() {
-        return "No se puede cancelar una vez en juego, debe finalizarse.";
+        return "Cannot cancel a scrim that is already in progress; it must be finished.";
     }
 
     @Override

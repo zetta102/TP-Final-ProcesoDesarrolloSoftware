@@ -83,30 +83,30 @@ public class ScrimService {
     }
 
     public Lobby createScrim(CreateScrimRequest request) {
-        if (request.cantidadJugadoresPorLado() <= 0 || request.cantidadJugadoresPorLado() > 5) {
-            throw new IllegalArgumentException("La cantidad de jugadores por lado debe estar entre 1 y 5.");
+        if (request.playersPerSide() <= 0 || request.playersPerSide() > 5) {
+            throw new IllegalArgumentException("Players per side must be between 1 and 5.");
         }
 
-        int minPlayers = request.cantidadJugadoresPorLado();
-        int maxPlayers = request.cantidadTotalJugadores() > 0
-                ? request.cantidadTotalJugadores()
-                : request.cantidadJugadoresPorLado() * 2;
+        int minPlayers = request.playersPerSide();
+        int maxPlayers = request.totalPlayers() > 0
+                ? request.totalPlayers()
+                : request.playersPerSide() * 2;
 
         if (maxPlayers < 2 || maxPlayers > 10) {
-            throw new IllegalArgumentException("La cantidad total de jugadores debe estar entre 2 y 10.");
+            throw new IllegalArgumentException("Total player count must be between 2 and 10.");
         }
 
         Player host = playerRepository.findByUsername(request.hostUserName());
-        LocalDateTime scheduledTime = parseScheduledDate(request.fecha());
+        LocalDateTime scheduledTime = parseScheduledDate(request.scheduledDate());
 
         Lobby lobby = new ScrimBuilder()
                 .host(host)
                 .fecha(scheduledTime)
                 .region(request.region())
                 .formato(minPlayers, maxPlayers)
-                .rango(request.rangoMin(), request.rangoMax())
-                .juego(request.juego() != null ? request.juego() : request.formato(), request.mapa())
-                .latenciaMax(request.latenciaMax())
+                .rango(request.minRank(), request.maxRank())
+                .juego(request.game() != null ? request.game() : request.format(), request.map())
+                .latenciaMax(request.maxLatency())
                 .build();
 
         return lobbyRepository.save(lobby);
@@ -122,7 +122,7 @@ public class ScrimService {
                     player.getId().toString(),
                     lobby.getId().toString(),
                     "Waitlisted",
-                    "El lobby esta lleno. Jugador agregado a lista de suplentes."
+                    "Lobby is full. Player added to waitlist."
             );
         }
 
@@ -130,14 +130,14 @@ public class ScrimService {
         try {
             context.postular(player, lobbyApplication.desiredRole());
             lobbyRepository.save(lobby);
-            return new LobbyConfirmation(player.getId().toString(), lobby.getId().toString(), "Confirmed", "Unido al lobby exitosamente.");
+            return new LobbyConfirmation(player.getId().toString(), lobby.getId().toString(), "Confirmed", "Joined lobby successfully.");
         } catch (IllegalStateException e) {
             log.info("Application rejected: {}", e.getMessage());
             return new LobbyConfirmation(lobbyApplication.username(), lobbyApplication.lobbyId(), "Rejected", e.getMessage());
         }
     }
 
-    public String confirmarParticipacion(UUID lobbyId, String username) {
+    public String confirmParticipation(UUID lobbyId, String username) {
         Lobby lobby = lobbyRepository.getReferenceById(lobbyId);
         Player player = playerRepository.findByUsername(username);
 
@@ -145,10 +145,15 @@ public class ScrimService {
         try {
             context.confirmar(player);
             lobbyRepository.save(lobby);
-            return "Jugador confirmado con éxito.";
+            return "Player confirmed successfully.";
         } catch (IllegalStateException e) {
-            return "Error al confirmar: " + e.getMessage();
+            return "Confirmation error: " + e.getMessage();
         }
+    }
+
+    @Deprecated
+    public String confirmarParticipacion(UUID lobbyId, String username) {
+        return confirmParticipation(lobbyId, username);
     }
 
     public Scrim startScrim(ScrimData scrimData) {
@@ -188,7 +193,7 @@ public class ScrimService {
                 createAndPersistScrim(lobby);
                 started++;
             } catch (IllegalStateException ex) {
-                log.warn("No se pudo iniciar lobby {} en scheduler: {}", lobby.getId(), ex.getMessage());
+                log.warn("Scheduler could not start lobby {}: {}", lobby.getId(), ex.getMessage());
             }
         }
 
@@ -213,7 +218,7 @@ public class ScrimService {
                 finishScrimById(scrim.getId());
                 finalized++;
             } catch (IllegalStateException ex) {
-                log.warn("No se pudo finalizar scrim {} en scheduler: {}", scrim.getId(), ex.getMessage());
+                log.warn("Scheduler could not finish scrim {}: {}", scrim.getId(), ex.getMessage());
             }
         }
 
@@ -227,7 +232,7 @@ public class ScrimService {
         try {
             context.cancelar();
             lobbyRepository.save(lobby);
-            return "Lobby " + lobbyId + " cancelado.";
+            return "Lobby " + lobbyId + " canceled.";
         } catch (IllegalStateException e) {
             return e.getMessage();
         }
@@ -250,7 +255,7 @@ public class ScrimService {
             stats.setStatus(STATUS_FINALIZADO);
             scrimStatisticsRepository.save(stats);
 
-            return "Scrim finalizada exitosamente.";
+            return "Scrim finished successfully.";
         } catch (IllegalStateException e) {
             return e.getMessage();
         }
@@ -262,12 +267,12 @@ public class ScrimService {
         // to filter *candidates* during auto-matchmaking cycles.
         return lobbyRepository.findAllByStatusEquals(STATUS_BUSCANDO)
                 .stream()
-                .filter(lobby -> data.juego() == null || data.juego().isBlank() || lobby.getGameMode().equalsIgnoreCase(data.juego()))
+                .filter(lobby -> data.game() == null || data.game().isBlank() || lobby.getGameMode().equalsIgnoreCase(data.game()))
                 .filter(lobby -> data.region() == null || data.region().isBlank() || lobby.getRegion().equalsIgnoreCase(data.region()))
-                .filter(lobby -> data.rangoMin() == null || data.rangoMin().isBlank() || compareRanks(lobby.getMinRank(), data.rangoMin()) <= 0)
-                .filter(lobby -> data.rangoMax() == null || data.rangoMax().isBlank() || compareRanks(lobby.getMaxRank(), data.rangoMax()) >= 0)
-                .filter(lobby -> data.latenciaMax() == null || lobby.getMaxPing() <= data.latenciaMax())
-                .filter(lobby -> data.fecha() == null || data.fecha().isBlank() || isSameDay(lobby, data.fecha()))
+                .filter(lobby -> data.minRank() == null || data.minRank().isBlank() || compareRanks(lobby.getMinRank(), data.minRank()) <= 0)
+                .filter(lobby -> data.maxRank() == null || data.maxRank().isBlank() || compareRanks(lobby.getMaxRank(), data.maxRank()) >= 0)
+                .filter(lobby -> data.maxLatency() == null || lobby.getMaxPing() <= data.maxLatency())
+                .filter(lobby -> data.date() == null || data.date().isBlank() || isSameDay(lobby, data.date()))
                 .toList();
     }
 
@@ -355,7 +360,7 @@ public class ScrimService {
             LocalDateTime requested = LocalDateTime.parse(fecha);
             return lobby.getScheduledTime() != null && lobby.getScheduledTime().toLocalDate().isEqual(requested.toLocalDate());
         } catch (DateTimeParseException ex) {
-            throw new IllegalArgumentException("Formato de fecha inválido en filtro. Use ISO-8601, por ejemplo 2026-06-18T21:00:00.");
+            throw new IllegalArgumentException("Invalid date format in filter. Use ISO-8601, for example 2026-06-18T21:00:00.");
         }
     }
 
@@ -367,7 +372,7 @@ public class ScrimService {
         try {
             return LocalDateTime.parse(rawDate);
         } catch (DateTimeParseException ex) {
-            throw new IllegalArgumentException("Formato de fecha inválido. Use ISO-8601, por ejemplo 2026-06-18T21:00:00.");
+            throw new IllegalArgumentException("Invalid date format. Use ISO-8601, for example 2026-06-18T21:00:00.");
         }
     }
 }

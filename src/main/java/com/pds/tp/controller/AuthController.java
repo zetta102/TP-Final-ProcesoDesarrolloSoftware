@@ -12,6 +12,8 @@ import java.util.Map;
 @RestController
 @RequestMapping({"/api/auth", "/v1/api/auth"})
 public class AuthController {
+    private static final String MESSAGE_KEY = "message";
+
     private final AuthService authService;
 
     public AuthController(AuthService authService) {
@@ -27,15 +29,16 @@ public class AuthController {
     public ResponseEntity<Map<String, String>> login(@RequestBody LoginData loginData) {
         boolean authenticated = authService.authenticate(loginData.identifier(), loginData.password());
         if (authenticated) {
-            // En un caso real se devolvería un JWT, aquí simulamos el formato.
-            return ResponseEntity.ok(Map.of("mensaje", "Autenticación exitosa", "token", "Bearer eyJhbG..."));
+            // In a real implementation this would return a JWT; here we keep a placeholder format.
+            return ResponseEntity.ok(Map.of(MESSAGE_KEY, "Authentication succeeded", "mensaje", "Authentication succeeded", "token", "Bearer eyJhbG..."));
         } else {
-            return ResponseEntity.status(401).body(Map.of("error", "Credenciales inválidas o email no verificado"));
+            return ResponseEntity.status(401).body(Map.of("error", "Invalid credentials or unverified email"));
         }
     }
 
     @PostMapping("/{username}/verify-email")
     public ResponseEntity<Map<String, String>> verifyEmail(@PathVariable String username) {
-        return ResponseEntity.ok(Map.of("mensaje", authService.verifyEmail(username)));
+        String message = authService.verifyEmail(username);
+        return ResponseEntity.ok(Map.of(MESSAGE_KEY, message, "mensaje", message));
     }
 }

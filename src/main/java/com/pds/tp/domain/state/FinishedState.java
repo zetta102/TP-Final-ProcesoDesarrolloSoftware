@@ -2,8 +2,13 @@ package com.pds.tp.domain.state;
 
 public class FinishedState extends AbstractTerminalState {
     @Override
+    protected String defaultTerminalMessage() {
+        return "Scrim is already finished.";
+    }
+
+    @Override
     protected String finalizeMessage() {
-        return "Ya finalizado.";
+        return "Scrim is already finished.";
     }
 
     @Override

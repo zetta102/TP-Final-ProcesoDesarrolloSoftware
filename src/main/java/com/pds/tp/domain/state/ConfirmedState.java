@@ -3,12 +3,12 @@ package com.pds.tp.domain.state;
 public class ConfirmedState extends AbstractOperationalState {
     @Override
     protected String postularRejectedMessage() {
-        return "Cupo completo y confirmado.";
+        return "Lobby is full and already confirmed.";
     }
 
     @Override
     protected String confirmarRejectedMessage() {
-        return "Ya están todos confirmados.";
+        return "All players are already confirmed.";
     }
 
     @Override
@@ -18,7 +18,7 @@ public class ConfirmedState extends AbstractOperationalState {
 
     @Override
     protected String finalizarRejectedMessage() {
-        return "Debe iniciar antes de finalizar.";
+        return "Scrim must start before it can be finished.";
     }
 
     @Override

@@ -1,18 +1,20 @@
 package com.pds.tp.application.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+
 public record CreateScrimRequest(
-        String juego,
-        String formato,
-        int cantidadJugadoresPorLado,
-        int cantidadTotalJugadores,
+        @JsonAlias("juego") String game,
+        @JsonAlias("formato") String format,
+        @JsonAlias("cantidadJugadoresPorLado") int playersPerSide,
+        @JsonAlias("cantidadTotalJugadores") int totalPlayers,
         String region,
-        String rangoMin,
-        String rangoMax,
-        int latenciaMax,
-        String fecha,
-        String duracion,
-        String modalidad,
-        String mapa,
+        @JsonAlias("rangoMin") String minRank,
+        @JsonAlias("rangoMax") String maxRank,
+        @JsonAlias("latenciaMax") int maxLatency,
+        @JsonAlias("fecha") String scheduledDate,
+        @JsonAlias("duracion") String duration,
+        @JsonAlias("modalidad") String mode,
+        @JsonAlias("mapa") String map,
         String hostUserName
 ) {
 }

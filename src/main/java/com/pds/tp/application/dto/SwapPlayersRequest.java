@@ -1,8 +1,10 @@
 package com.pds.tp.application.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+
 public record SwapPlayersRequest(
-        String jugador1,
-        String jugador2
+        @JsonAlias("jugador1") String firstPlayerUsername,
+        @JsonAlias("jugador2") String secondPlayerUsername
 ) {
 }
 

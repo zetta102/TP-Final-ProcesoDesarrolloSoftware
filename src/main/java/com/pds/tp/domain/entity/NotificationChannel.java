@@ -1,9 +1,10 @@
 package com.pds.tp.domain.entity;
 
-public enum CanalNotificacion {
+public enum NotificationChannel {
     PUSH,
     EMAIL,
     DISCORD,
     SLACK
 }
+
 

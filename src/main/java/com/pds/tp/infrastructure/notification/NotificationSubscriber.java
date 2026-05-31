@@ -33,7 +33,7 @@ public class NotificationSubscriber {
         Notifier push = notifierFactory.createPushNotifier();
         Notifier ical = notifierFactory.createICalNotifier();
 
-        String message = String.format("El Lobby %s ha cambiado de estado a: %s",
+        String message = String.format("Lobby %s changed to state: %s",
                 event.getLobbyId(), event.getNuevoEstado());
         NotificationTargets targets = resolveTargets(event.getLobbyId());
 
@@ -50,7 +50,7 @@ public class NotificationSubscriber {
 
     @EventListener
     public void onScrimCreated(ScrimCreatedEvent event) {
-        String message = String.format("Nuevo scrim creado (%s) en %s. Lobby: %s",
+        String message = String.format("New scrim created (%s) in %s. Lobby: %s",
                 event.getGame(), event.getRegion(), event.getLobbyId());
         sendWithRetry(notifierFactory.createDiscordNotifier(), "#scrim-updates", message, "DISCORD");
         sendWithRetry(notifierFactory.createEmailNotifier(), "all-players@scrims.local", message, "EMAIL");
@@ -68,16 +68,16 @@ public class NotificationSubscriber {
                 return;
             } catch (RuntimeException ex) {
                 if (attempt == MAX_ATTEMPTS) {
-                    log.error("No se pudo enviar notificación por {} tras {} intentos", channel, MAX_ATTEMPTS, ex);
+                    log.error("Could not deliver {} notification after {} attempts", channel, MAX_ATTEMPTS, ex);
                     return;
                 }
 
-                log.warn("Fallo al enviar por {} (intento {}), reintentando...", channel, attempt, ex);
+                log.warn("Delivery failed via {} (attempt {}), retrying...", channel, attempt, ex);
                 try {
                     Thread.sleep(backoff);
                 } catch (InterruptedException interruptedException) {
                     Thread.currentThread().interrupt();
-                    log.error("Reintento interrumpido para canal {}", channel, interruptedException);
+                    log.error("Retry interrupted for channel {}", channel, interruptedException);
                     return;
                 }
                 backoff *= 2;

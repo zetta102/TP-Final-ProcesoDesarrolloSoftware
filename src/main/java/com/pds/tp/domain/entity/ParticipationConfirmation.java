@@ -12,19 +12,19 @@ import java.util.UUID;
 @NoArgsConstructor
 @Getter
 @Entity
-public class Notificacion {
+public class ParticipationConfirmation {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    private String tipo;
-    private String payload;
+    @ManyToOne
+    private Player user;
 
-    @Enumerated(EnumType.STRING)
-    private CanalNotificacion canal;
+    @ManyToOne
+    private Scrim scrim;
 
     @Setter
-    @Enumerated(EnumType.STRING)
-    private EstadoNotificacion estado = EstadoNotificacion.PENDIENTE;
+    private boolean confirmed;
 }
+
 

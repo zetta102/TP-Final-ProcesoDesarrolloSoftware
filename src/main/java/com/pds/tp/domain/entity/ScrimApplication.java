@@ -4,26 +4,30 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
 @Entity
-public class Equipo {
+public class ScrimApplication {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    private String lado;
+    @ManyToOne
+    private Player user;
 
     @ManyToOne
     private Scrim scrim;
 
-    @ManyToMany
-    private List<Player> jugadores = new ArrayList<>();
+    private String desiredRole;
+
+    @Setter
+    @Enumerated(EnumType.STRING)
+    private ScrimApplicationStatus status = ScrimApplicationStatus.PENDING;
 }
+
 
