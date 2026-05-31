@@ -6,7 +6,7 @@ public record FindLobbyData(
         String rangoMin,
         String rangoMax,
         String fecha,
-        int latenciaMax
+        Integer latenciaMax
 ) {
 }
 

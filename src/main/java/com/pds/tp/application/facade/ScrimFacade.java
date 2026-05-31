@@ -20,6 +20,7 @@ import com.pds.tp.domain.entity.Player;
 import com.pds.tp.domain.entity.Scrim;
 import com.pds.tp.domain.entity.ScrimStatistics;
 import com.pds.tp.domain.state.ScrimContext;
+import com.pds.tp.domain.state.ScrimStateResolver;
 import com.pds.tp.infrastructure.repository.LobbyRepository;
 import com.pds.tp.infrastructure.repository.PlayerRepository;
 import org.springframework.stereotype.Service;
@@ -34,24 +35,27 @@ public class ScrimFacade {
     private final CommandExecutor commandExecutor;
     private final LobbyRepository lobbyRepository;
     private final PlayerRepository playerRepository;
+    private final ScrimStateResolver stateResolver;
 
     public ScrimFacade(ScrimService scrimService,
                        ReportService reportService,
                        CommandExecutor commandExecutor,
                        LobbyRepository lobbyRepository,
-                       PlayerRepository playerRepository) {
+                       PlayerRepository playerRepository,
+                       ScrimStateResolver stateResolver) {
         this.scrimService = scrimService;
         this.reportService = reportService;
         this.commandExecutor = commandExecutor;
         this.lobbyRepository = lobbyRepository;
         this.playerRepository = playerRepository;
+        this.stateResolver = stateResolver;
     }
 
     public Lobby createScrim(CreateScrimRequest request) {
         return scrimService.createScrim(request);
     }
 
-    public List<Lobby> findScrims(String juego, String region, String rangoMin, String rangoMax, String fecha, int latenciaMax) {
+    public List<Lobby> findScrims(String juego, String region, String rangoMin, String rangoMax, String fecha, Integer latenciaMax) {
         FindLobbyData findLobbyData = new FindLobbyData(juego, region, rangoMin, rangoMax, fecha, latenciaMax);
         return scrimService.findActiveLobbiesByRegionAndRank(findLobbyData);
     }
@@ -74,7 +78,7 @@ public class ScrimFacade {
         Player p1 = playerRepository.findByUsername(request.jugador1());
         Player p2 = playerRepository.findByUsername(request.jugador2());
 
-        ScrimContext context = new ScrimContext(lobby, null, null);
+        ScrimContext context = new ScrimContext(lobby, stateResolver.resolve(lobby.getStatus()), null);
         SwapJugadoresCommand swapCommand = new SwapJugadoresCommand(p1, p2);
         commandExecutor.executeCommand(swapCommand, context);
 

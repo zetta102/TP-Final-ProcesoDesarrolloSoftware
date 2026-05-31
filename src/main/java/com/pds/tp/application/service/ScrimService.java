@@ -7,19 +7,14 @@ import com.pds.tp.application.dto.LobbyApplication;
 import com.pds.tp.application.dto.LobbyConfirmation;
 import com.pds.tp.application.dto.LobbyData;
 import com.pds.tp.application.dto.ScrimData;
-import com.pds.tp.domain.builder.LobbyBuilder;
+import com.pds.tp.domain.builder.ScrimBuilder;
+import com.pds.tp.domain.event.ScrimCreatedEvent;
 import com.pds.tp.domain.entity.Lobby;
 import com.pds.tp.domain.entity.Player;
 import com.pds.tp.domain.entity.Scrim;
 import com.pds.tp.domain.entity.ScrimStatistics;
-import com.pds.tp.domain.state.CanceledState;
-import com.pds.tp.domain.state.ConfirmedState;
-import com.pds.tp.domain.state.CreatedLobbyState;
-import com.pds.tp.domain.state.FinishedState;
-import com.pds.tp.domain.state.PlayingState;
 import com.pds.tp.domain.state.ScrimContext;
-import com.pds.tp.domain.state.ScrimState;
-import com.pds.tp.domain.state.SearchingState;
+import com.pds.tp.domain.state.ScrimStateResolver;
 import com.pds.tp.domain.strategy.MatchmakingStrategy;
 import com.pds.tp.infrastructure.repository.LobbyRepository;
 import com.pds.tp.infrastructure.repository.PlayerRepository;
@@ -53,32 +48,37 @@ public class ScrimService {
     // Pattern Injections
     private final ApplicationEventPublisher eventPublisher;
     private final MatchmakingStrategy matchmakingStrategy;
+    private final ScrimStateResolver stateResolver;
 
     public ScrimService(ScrimRepository scrimRepository, LobbyRepository lobbyRepository,
                         PlayerRepository playerRepository, ScrimStatisticsRepository scrimStatisticsRepository,
                         ApplicationEventPublisher eventPublisher,
-                        MatchmakingStrategy matchmakingStrategy) {
+                        MatchmakingStrategy matchmakingStrategy,
+                        ScrimStateResolver stateResolver) {
         this.scrimRepository = scrimRepository;
         this.lobbyRepository = lobbyRepository;
         this.playerRepository = playerRepository;
         this.scrimStatisticsRepository = scrimStatisticsRepository;
         this.eventPublisher = eventPublisher;
         this.matchmakingStrategy = matchmakingStrategy;
+        this.stateResolver = stateResolver;
     }
 
     public Lobby createLobby(LobbyData lobbyData) {
         Player player = playerRepository.findByUsername(lobbyData.hostUserName());
 
         // Implementing the Builder Pattern
-        Lobby lobby = new LobbyBuilder()
-                .conHost(player)
-                .conFormato(lobbyData.minPlayers(), lobbyData.maxPlayers())
-                .conRango(lobbyData.minRank(), lobbyData.maxRank())
-                .conJuego(lobbyData.gameMode(), lobbyData.map())
-                .conLatenciaMax(lobbyData.maxPing())
+        Lobby lobby = new ScrimBuilder()
+                .host(player)
+                .formato(lobbyData.minPlayers(), lobbyData.maxPlayers())
+                .rango(lobbyData.minRank(), lobbyData.maxRank())
+                .juego(lobbyData.gameMode(), lobbyData.map())
+                .latenciaMax(lobbyData.maxPing())
                 .build();
 
-        return lobbyRepository.save(lobby);
+        Lobby savedLobby = lobbyRepository.save(lobby);
+        eventPublisher.publishEvent(new ScrimCreatedEvent(this, savedLobby.getId(), savedLobby.getGameMode(), savedLobby.getRegion()));
+        return savedLobby;
     }
 
     public Lobby createScrim(CreateScrimRequest request) {
@@ -98,14 +98,14 @@ public class ScrimService {
         Player host = playerRepository.findByUsername(request.hostUserName());
         LocalDateTime scheduledTime = parseScheduledDate(request.fecha());
 
-        Lobby lobby = new LobbyBuilder()
-                .conHost(host)
-                .conFecha(scheduledTime)
-                .conRegion(request.region())
-                .conFormato(minPlayers, maxPlayers)
-                .conRango(request.rangoMin(), request.rangoMax())
-                .conJuego(request.juego() != null ? request.juego() : request.formato(), request.mapa())
-                .conLatenciaMax(request.latenciaMax())
+        Lobby lobby = new ScrimBuilder()
+                .host(host)
+                .fecha(scheduledTime)
+                .region(request.region())
+                .formato(minPlayers, maxPlayers)
+                .rango(request.rangoMin(), request.rangoMax())
+                .juego(request.juego() != null ? request.juego() : request.formato(), request.mapa())
+                .latenciaMax(request.latenciaMax())
                 .build();
 
         return lobbyRepository.save(lobby);
@@ -115,7 +115,7 @@ public class ScrimService {
         Lobby lobby = lobbyRepository.getReferenceById(UUID.fromString(lobbyApplication.lobbyId()));
         Player player = playerRepository.findByUsername(lobbyApplication.username());
 
-        ScrimContext context = new ScrimContext(lobby, hydrateState(lobby.getStatus()), eventPublisher);
+        ScrimContext context = new ScrimContext(lobby, stateResolver.resolve(lobby.getStatus()), eventPublisher);
         try {
             context.postular(player, lobbyApplication.desiredRole());
             lobbyRepository.save(lobby);
@@ -130,7 +130,7 @@ public class ScrimService {
         Lobby lobby = lobbyRepository.getReferenceById(lobbyId);
         Player player = playerRepository.findByUsername(username);
 
-        ScrimContext context = new ScrimContext(lobby, hydrateState(lobby.getStatus()), eventPublisher);
+        ScrimContext context = new ScrimContext(lobby, stateResolver.resolve(lobby.getStatus()), eventPublisher);
         try {
             context.confirmar(player);
             lobbyRepository.save(lobby);
@@ -148,7 +148,7 @@ public class ScrimService {
     }
 
     private Scrim createAndPersistScrim(Lobby lobby) {
-        ScrimContext context = new ScrimContext(lobby, hydrateState(lobby.getStatus()), eventPublisher);
+        ScrimContext context = new ScrimContext(lobby, stateResolver.resolve(lobby.getStatus()), eventPublisher);
 
         context.iniciar(); // Delegates to State Pattern
         lobbyRepository.save(lobby);
@@ -211,7 +211,7 @@ public class ScrimService {
 
     public String cancelLobbyById(UUID lobbyId) {
         Lobby lobby = lobbyRepository.getReferenceById(lobbyId);
-        ScrimContext context = new ScrimContext(lobby, hydrateState(lobby.getStatus()), eventPublisher);
+        ScrimContext context = new ScrimContext(lobby, stateResolver.resolve(lobby.getStatus()), eventPublisher);
 
         try {
             context.cancelar();
@@ -225,7 +225,7 @@ public class ScrimService {
     public String finishScrimById(UUID scrimId) {
         Scrim scrim = scrimRepository.getReferenceById(scrimId);
         Lobby lobby = scrim.getLobbyId();
-        ScrimContext context = new ScrimContext(lobby, hydrateState(lobby.getStatus()), eventPublisher);
+        ScrimContext context = new ScrimContext(lobby, stateResolver.resolve(lobby.getStatus()), eventPublisher);
 
         try {
             context.finalizar();
@@ -249,10 +249,14 @@ public class ScrimService {
         // Here we could use MatchmakingStrategy to filter the lobbies dynamically
         // Currently wrapping the repo call, but Strategy Pattern is implemented above
         // to filter *candidates* during auto-matchmaking cycles.
-        return lobbyRepository.findAllByRegionAndMinRankLessThanEqualAndMaxRankGreaterThanEqualAndMaxPingLessThanEqualAndStatusEquals(
-                        data.region(), data.rangoMin(), data.rangoMax(), data.latenciaMax(), STATUS_BUSCANDO)
+        return lobbyRepository.findAllByStatusEquals(STATUS_BUSCANDO)
                 .stream()
                 .filter(lobby -> data.juego() == null || data.juego().isBlank() || lobby.getGameMode().equalsIgnoreCase(data.juego()))
+                .filter(lobby -> data.region() == null || data.region().isBlank() || lobby.getRegion().equalsIgnoreCase(data.region()))
+                .filter(lobby -> data.rangoMin() == null || data.rangoMin().isBlank() || compareRanks(lobby.getMinRank(), data.rangoMin()) <= 0)
+                .filter(lobby -> data.rangoMax() == null || data.rangoMax().isBlank() || compareRanks(lobby.getMaxRank(), data.rangoMax()) >= 0)
+                .filter(lobby -> data.latenciaMax() == null || lobby.getMaxPing() <= data.latenciaMax())
+                .filter(lobby -> data.fecha() == null || data.fecha().isBlank() || isSameDay(lobby, data.fecha()))
                 .toList();
     }
 
@@ -265,7 +269,7 @@ public class ScrimService {
             // Apply Strategy Pattern
             List<Player> selected = matchmakingStrategy.seleccionar(availablePlayers, lobby);
 
-            ScrimContext context = new ScrimContext(lobby, hydrateState(lobby.getStatus()), eventPublisher);
+            ScrimContext context = new ScrimContext(lobby, stateResolver.resolve(lobby.getStatus()), eventPublisher);
             for (Player p : selected) {
                 try {
                     context.postular(p, "FLEX");
@@ -295,18 +299,33 @@ public class ScrimService {
         return scrimStatisticsRepository.save(statistics);
     }
 
-    // --- State Hydration Helper ---
-    private ScrimState hydrateState(String status) {
-        if (status == null) return new SearchingState();
-        return switch (status) {
-            case STATUS_BUSCANDO -> new SearchingState();
-            case "LobbyArmado" -> new CreatedLobbyState();
-            case "Confirmado" -> new ConfirmedState();
-            case "EnJuego" -> new PlayingState();
-            case STATUS_FINALIZADO -> new FinishedState();
-            case "Cancelado" -> new CanceledState();
-            default -> new SearchingState(); // Fallback
+    private int compareRanks(String a, String b) {
+        return rankToValue(a) - rankToValue(b);
+    }
+
+    private int rankToValue(String rank) {
+        if (rank == null || rank.isBlank()) {
+            return 0;
+        }
+        return switch (rank.trim().toUpperCase()) {
+            case "HIERRO" -> 1;
+            case "BRONCE" -> 2;
+            case "PLATA" -> 3;
+            case "ORO" -> 4;
+            case "PLATINO" -> 5;
+            case "DIAMANTE" -> 6;
+            case "RADIANTE" -> 7;
+            default -> 0;
         };
+    }
+
+    private boolean isSameDay(Lobby lobby, String fecha) {
+        try {
+            LocalDateTime requested = LocalDateTime.parse(fecha);
+            return lobby.getScheduledTime() != null && lobby.getScheduledTime().toLocalDate().isEqual(requested.toLocalDate());
+        } catch (DateTimeParseException ex) {
+            throw new IllegalArgumentException("Formato de fecha inválido en filtro. Use ISO-8601, por ejemplo 2026-06-18T21:00:00.");
+        }
     }
 
     private LocalDateTime parseScheduledDate(String rawDate) {

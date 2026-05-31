@@ -1,9 +1,11 @@
 package com.pds.tp.domain.event;
 
+import lombok.Getter;
 import org.springframework.context.ApplicationEvent;
 
 import java.util.UUID;
 
+@Getter
 public class ScrimStateChangedEvent extends ApplicationEvent {
     private final UUID lobbyId;
     private final String nuevoEstado;
@@ -14,12 +16,5 @@ public class ScrimStateChangedEvent extends ApplicationEvent {
         this.nuevoEstado = nuevoEstado;
     }
 
-    public UUID getLobbyId() {
-        return lobbyId;
-    }
-
-    public String getNuevoEstado() {
-        return nuevoEstado;
-    }
 }
 

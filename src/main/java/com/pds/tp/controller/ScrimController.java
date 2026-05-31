@@ -37,11 +37,11 @@ public class ScrimController {
     @GetMapping
     public ResponseEntity<List<Lobby>> find(
             @RequestParam(required = false) String juego,
-            @RequestParam String region,
-            @RequestParam String rangoMin,
-            @RequestParam String rangoMax,
+            @RequestParam(required = false) String region,
+            @RequestParam(required = false) String rangoMin,
+            @RequestParam(required = false) String rangoMax,
             @RequestParam(required = false) String fecha,
-            @RequestParam int latenciaMax) {
+            @RequestParam(required = false) Integer latenciaMax) {
         return ResponseEntity.ok(scrimFacade.findScrims(juego, region, rangoMin, rangoMax, fecha, latenciaMax));
     }
 

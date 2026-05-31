@@ -1,5 +1,6 @@
 package com.pds.tp.infrastructure.notification;
 
+import com.pds.tp.domain.event.ScrimCreatedEvent;
 import com.pds.tp.domain.event.ScrimStateChangedEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -30,6 +31,15 @@ public class NotificationSubscriber {
         sendWithRetry(discord, "#scrim-updates", message, "DISCORD");
         sendWithRetry(email, "all-players@scrims.local", message, "EMAIL");
         sendWithRetry(push, "all-players", message, "PUSH");
+    }
+
+    @EventListener
+    public void onScrimCreated(ScrimCreatedEvent event) {
+        String message = String.format("Nuevo scrim creado (%s) en %s. Lobby: %s",
+                event.getGame(), event.getRegion(), event.getLobbyId());
+        sendWithRetry(notifierFactory.createDiscordNotifier(), "#scrim-updates", message, "DISCORD");
+        sendWithRetry(notifierFactory.createEmailNotifier(), "all-players@scrims.local", message, "EMAIL");
+        sendWithRetry(notifierFactory.createPushNotifier(), "all-players", message, "PUSH");
     }
 
     private void sendWithRetry(Notifier notifier, String target, String message, String channel) {

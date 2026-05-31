@@ -29,7 +29,7 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<Map<String, String>> login(@RequestBody LoginData loginData) {
-        boolean authenticated = authService.authenticate(loginData.username(), loginData.password());
+        boolean authenticated = authService.authenticate(loginData.identifier(), loginData.password());
         if (authenticated) {
             // En un caso real se devolvería un JWT, aquí simulamos el formato.
             return ResponseEntity.ok(Map.of("mensaje", "Autenticación exitosa", "token", "Bearer eyJhbG..."));

@@ -48,7 +48,7 @@ public class ReportService {
     public ReportConfirmation processReport(ReportApplication reportApp) {
         Player reportingPlayer = playerRepository.findByUsername(reportApp.reportingPlayerUsername());
         Player reportedPlayer = playerRepository.findByUsername(reportApp.reportedPlayerUsername());
-        Scrim scrim = scrimRepository.getReferenceById(UUID.fromString(reportApp.lobbyId()));
+        Scrim scrim = scrimRepository.getReferenceById(UUID.fromString(reportApp.scrimId()));
 
         if (!scrim.getStatus().equals("Finalizado")) {
             throw new IllegalStateException("You cannot report players from a non-finished scrim.");

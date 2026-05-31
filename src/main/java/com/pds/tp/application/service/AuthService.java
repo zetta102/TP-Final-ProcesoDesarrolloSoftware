@@ -41,8 +41,8 @@ public class AuthService {
         return playerRepository.save(player);
     }
 
-    public boolean authenticate(String username, String password) {
-        Player player = playerRepository.findByUsername(username);
+    public boolean authenticate(String identifier, String password) {
+        Player player = resolvePlayer(identifier);
         if (player == null) {
             return false;
         }
@@ -50,6 +50,16 @@ public class AuthService {
             return false;
         }
         return passwordEncoder.matches(password, player.getPassword());
+    }
+
+    private Player resolvePlayer(String identifier) {
+        if (identifier == null || identifier.isBlank()) {
+            return null;
+        }
+        if (identifier.contains("@")) {
+            return playerRepository.findByEmail(identifier);
+        }
+        return playerRepository.findByUsername(identifier);
     }
 
     public String verifyEmail(String username) {
