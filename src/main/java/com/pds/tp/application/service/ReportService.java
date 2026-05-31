@@ -22,7 +22,7 @@ public class ReportService {
     private final PlayerRepository playerRepository;
     private final ScrimRepository scrimRepository;
 
-    // Chain Nodes
+    // Chain of Responsibility nodes.
     private final AutoResolverNode autoResolver;
     private final BotAnalyzerNode botAnalyzer;
     private final HumanModNode humanMod;
@@ -40,7 +40,7 @@ public class ReportService {
 
     @PostConstruct
     public void initChain() {
-        // Enlazar la cadena de responsabilidad
+        // Wire moderation handlers in escalation order.
         autoResolver.setNext(botAnalyzer);
         botAnalyzer.setNext(humanMod);
     }
@@ -57,7 +57,7 @@ public class ReportService {
         Report report = new Report(scrim, reportingPlayer, reportedPlayer, reportApp.reason(), "Context Description Placeholder");
         report = reportRepository.save(report);
 
-        // Disparar el pipeline de moderación
+        // Execute moderation pipeline.
         autoResolver.handle(report);
 
         return new ReportConfirmation(report.getId(), report.getReportingPlayer().getUsername(),

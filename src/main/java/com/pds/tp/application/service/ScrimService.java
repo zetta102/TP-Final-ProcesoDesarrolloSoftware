@@ -44,7 +44,6 @@ public class ScrimService {
     private final ScrimStatisticsRepository scrimStatisticsRepository;
     private final WaitlistRepository waitlistRepository;
 
-    // Pattern Injections
     private final ApplicationEventPublisher eventPublisher;
     private final MatchmakingStrategy matchmakingStrategy;
     private final ScrimStateResolver stateResolver;
@@ -68,7 +67,6 @@ public class ScrimService {
     public Lobby createLobby(LobbyData lobbyData) {
         Player player = playerRepository.findByUsername(lobbyData.hostUserName());
 
-        // Implementing the Builder Pattern
         Lobby lobby = new ScrimBuilder()
                 .host(player)
                 .formato(lobbyData.minPlayers(), lobbyData.maxPlayers())
@@ -166,7 +164,8 @@ public class ScrimService {
     private Scrim createAndPersistScrim(Lobby lobby) {
         ScrimContext context = new ScrimContext(lobby, stateResolver.resolve(lobby.getStatus()), eventPublisher);
 
-        context.iniciar(); // Delegates to State Pattern
+        // State transition validation is delegated to the current ScrimState.
+        context.iniciar();
         lobbyRepository.save(lobby);
 
         Scrim scrim = scrimRepository.save(new Scrim(lobby, lobby.getGameMode(), lobby.getMap(), context.getState().getStatusName()));
@@ -262,9 +261,6 @@ public class ScrimService {
     }
 
     public List<Lobby> findActiveLobbiesByRegionAndRank(FindLobbyData data) {
-        // Here we could use MatchmakingStrategy to filter the lobbies dynamically
-        // Currently wrapping the repo call, but Strategy Pattern is implemented above
-        // to filter *candidates* during auto-matchmaking cycles.
         return lobbyRepository.findAllByStatusEquals(STATUS_BUSCANDO)
                 .stream()
                 .filter(lobby -> data.game() == null || data.game().isBlank() || lobby.getGameMode().equalsIgnoreCase(data.game()))
@@ -279,12 +275,12 @@ public class ScrimService {
     @Scheduled(fixedRate = 60, timeUnit = TimeUnit.SECONDS)
     public void autoMatchmakingCron() {
         List<Lobby> lobbies = lobbyRepository.findAllByStatusEquals(STATUS_BUSCANDO);
-        List<Player> availablePlayers = playerRepository.findAll(); // Assuming pool of active lookups
+        // Use the full player pool as matchmaking candidates for this scheduled prototype flow.
+        List<Player> availablePlayers = playerRepository.findAll();
 
         for (Lobby lobby : lobbies) {
             promoteWaitlistedPlayers(lobby);
 
-            // Apply Strategy Pattern
             List<Player> selected = matchmakingStrategy.seleccionar(availablePlayers, lobby);
 
             ScrimContext context = new ScrimContext(lobby, stateResolver.resolve(lobby.getStatus()), eventPublisher);
@@ -292,7 +288,7 @@ public class ScrimService {
                 try {
                     context.postular(p, "FLEX");
                 } catch (IllegalStateException ignored) {
-                    // Some selected players may become invalid while the scheduler fills the lobby.
+                    // A selected player can become invalid while the lobby is being filled.
                 }
             }
             lobbyRepository.save(lobby);
@@ -328,7 +324,7 @@ public class ScrimService {
                 waitlistRepository.save(entry);
                 availableSlots--;
             } catch (IllegalStateException ignored) {
-                // Keep waiting entry pending when state/rules still prevent promotion.
+                // Keep entry pending if current state/rules still block promotion.
             }
         }
     }

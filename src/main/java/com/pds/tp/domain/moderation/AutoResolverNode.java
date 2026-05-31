@@ -11,10 +11,10 @@ public class AutoResolverNode extends ModerationNode {
     public void handle(Report report) {
         log.info("AutoResolverNode: Analizando reporte {} por motivo: {}", report.getId(), report.getReason());
 
-        // Simulación: Si el motivo es AFK, el sistema lo auto-resuelve verificando logs del servidor
+        // Auto-resolve obvious no-show/abandonment reasons.
         if ("AFK".equalsIgnoreCase(report.getReason()) || "LEAVER".equalsIgnoreCase(report.getReason())) {
             log.info("AutoResolverNode: Abandono confirmado por logs. Aplicando sanción automática.");
-            // En la vida real: db.updateStatus("RESUELTO_AUTO");
+            // In production this would persist an auto-resolved moderation status.
         } else {
             log.info("AutoResolverNode: Evidencia insuficiente. Escalando al bot analizador...");
             passToNext(report);
