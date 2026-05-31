@@ -1,9 +1,9 @@
 package com.pds.tp.controller;
 
-import com.pds.tp.entity.Player;
-import com.pds.tp.model.LoginData;
-import com.pds.tp.model.PlayerData;
-import com.pds.tp.service.AuthService;
+import com.pds.tp.domain.entity.Player;
+import com.pds.tp.application.dto.LoginData;
+import com.pds.tp.application.dto.PlayerData;
+import com.pds.tp.application.service.AuthService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;

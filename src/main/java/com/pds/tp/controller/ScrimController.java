@@ -1,14 +1,23 @@
 package com.pds.tp.controller;
 
-import com.pds.tp.entity.Lobby;
-import com.pds.tp.entity.Player;
-import com.pds.tp.entity.Scrim;
-import com.pds.tp.entity.ScrimStatistics;
-import com.pds.tp.model.*;
-import com.pds.tp.repository.LobbyRepository;
-import com.pds.tp.repository.PlayerRepository;
-import com.pds.tp.service.ReportService;
-import com.pds.tp.service.ScrimService;
+import com.pds.tp.application.command.CommandExecutor;
+import com.pds.tp.application.command.SwapJugadoresCommand;
+import com.pds.tp.application.dto.FindLobbyData;
+import com.pds.tp.application.dto.LobbyApplication;
+import com.pds.tp.application.dto.LobbyConfirmation;
+import com.pds.tp.application.dto.LobbyData;
+import com.pds.tp.application.dto.ReportApplication;
+import com.pds.tp.application.dto.ReportConfirmation;
+import com.pds.tp.application.dto.ScrimData;
+import com.pds.tp.application.service.ReportService;
+import com.pds.tp.application.service.ScrimService;
+import com.pds.tp.domain.entity.Lobby;
+import com.pds.tp.domain.entity.Player;
+import com.pds.tp.domain.entity.Scrim;
+import com.pds.tp.domain.entity.ScrimStatistics;
+import com.pds.tp.domain.state.ScrimContext;
+import com.pds.tp.infrastructure.repository.LobbyRepository;
+import com.pds.tp.infrastructure.repository.PlayerRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
