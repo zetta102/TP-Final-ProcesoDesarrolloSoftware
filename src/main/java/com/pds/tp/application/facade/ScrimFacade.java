@@ -2,17 +2,7 @@ package com.pds.tp.application.facade;
 
 import com.pds.tp.application.command.CommandExecutor;
 import com.pds.tp.application.command.SwapJugadoresCommand;
-import com.pds.tp.application.dto.ApplyToScrimRequest;
-import com.pds.tp.application.dto.ConfirmParticipationRequest;
-import com.pds.tp.application.dto.CreateScrimRequest;
-import com.pds.tp.application.dto.CreateStatisticsRequest;
-import com.pds.tp.application.dto.FindLobbyData;
-import com.pds.tp.application.dto.LobbyApplication;
-import com.pds.tp.application.dto.LobbyConfirmation;
-import com.pds.tp.application.dto.ReportApplication;
-import com.pds.tp.application.dto.ReportConfirmation;
-import com.pds.tp.application.dto.ScrimData;
-import com.pds.tp.application.dto.SwapPlayersRequest;
+import com.pds.tp.application.dto.*;
 import com.pds.tp.application.service.ReportService;
 import com.pds.tp.application.service.ScrimService;
 import com.pds.tp.domain.entity.Lobby;

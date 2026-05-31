@@ -32,7 +32,9 @@ class ScrimStateTransitionsTest {
                 "ASCENT",
                 "Buscando",
                 host,
-                new ArrayList<>() {{ add(host); }},
+                new ArrayList<>() {{
+                    add(host);
+                }},
                 new HashSet<>()
         );
 
@@ -69,7 +71,9 @@ class ScrimStateTransitionsTest {
                 "BIND",
                 "Buscando",
                 host,
-                new ArrayList<>() {{ add(host); }},
+                new ArrayList<>() {{
+                    add(host);
+                }},
                 new HashSet<>()
         );
 

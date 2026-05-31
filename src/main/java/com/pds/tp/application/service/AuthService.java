@@ -1,8 +1,8 @@
 package com.pds.tp.application.service;
 
-import com.pds.tp.domain.entity.Player;
-import com.pds.tp.domain.entity.EmailVerificationStatus;
 import com.pds.tp.application.dto.PlayerData;
+import com.pds.tp.domain.entity.EmailVerificationStatus;
+import com.pds.tp.domain.entity.Player;
 import com.pds.tp.infrastructure.repository.PlayerRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;

@@ -1,8 +1,8 @@
 package com.pds.tp.domain.state;
 
-import com.pds.tp.domain.event.ScrimStateChangedEvent;
 import com.pds.tp.domain.entity.Lobby;
 import com.pds.tp.domain.entity.Player;
+import com.pds.tp.domain.event.ScrimStateChangedEvent;
 import lombok.Getter;
 import org.springframework.context.ApplicationEventPublisher;
 

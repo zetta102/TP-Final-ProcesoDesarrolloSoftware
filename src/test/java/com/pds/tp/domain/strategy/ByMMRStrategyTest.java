@@ -31,7 +31,9 @@ class ByMMRStrategyTest {
                 "HAVEN",
                 "Buscando",
                 host,
-                new ArrayList<>() {{ add(host); }},
+                new ArrayList<>() {{
+                    add(host);
+                }},
                 new HashSet<>()
         );
 
@@ -72,7 +74,9 @@ class ByMMRStrategyTest {
                 "LOTUS",
                 "Buscando",
                 host,
-                new ArrayList<>() {{ add(host); }},
+                new ArrayList<>() {{
+                    add(host);
+                }},
                 new HashSet<>()
         );
 

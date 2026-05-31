@@ -1,18 +1,12 @@
 package com.pds.tp.application.service;
 
-import com.pds.tp.application.dto.FindLobbyData;
-import com.pds.tp.application.dto.CreateScrimRequest;
-import com.pds.tp.application.dto.CreateStatisticsRequest;
-import com.pds.tp.application.dto.LobbyApplication;
-import com.pds.tp.application.dto.LobbyConfirmation;
-import com.pds.tp.application.dto.LobbyData;
-import com.pds.tp.application.dto.ScrimData;
+import com.pds.tp.application.dto.*;
 import com.pds.tp.domain.builder.ScrimBuilder;
-import com.pds.tp.domain.event.ScrimCreatedEvent;
 import com.pds.tp.domain.entity.Lobby;
 import com.pds.tp.domain.entity.Player;
 import com.pds.tp.domain.entity.Scrim;
 import com.pds.tp.domain.entity.ScrimStatistics;
+import com.pds.tp.domain.event.ScrimCreatedEvent;
 import com.pds.tp.domain.state.ScrimContext;
 import com.pds.tp.domain.state.ScrimStateResolver;
 import com.pds.tp.domain.strategy.MatchmakingStrategy;
@@ -26,8 +20,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;

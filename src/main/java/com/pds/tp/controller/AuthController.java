@@ -1,15 +1,11 @@
 package com.pds.tp.controller;
 
-import com.pds.tp.domain.entity.Player;
 import com.pds.tp.application.dto.LoginData;
 import com.pds.tp.application.dto.PlayerData;
 import com.pds.tp.application.service.AuthService;
+import com.pds.tp.domain.entity.Player;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
