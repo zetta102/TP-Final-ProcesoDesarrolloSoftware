@@ -11,7 +11,9 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @AllArgsConstructor
@@ -37,8 +39,10 @@ public class Lobby {
     private Player host;
     @OneToMany
     private List<Player> players;
+    @ElementCollection(fetch = FetchType.EAGER)
+    private Set<String> confirmedPlayerUsernames;
 
-    public Lobby(LocalDateTime scheduledTime, int maxPlayers, int minPlayers, String region, String minRank, String maxRank, int maxPing, String gameMode, String map, String status, Player host, List<Player> players) {
+    public Lobby(LocalDateTime scheduledTime, int maxPlayers, int minPlayers, String region, String minRank, String maxRank, int maxPing, String gameMode, String map, String status, Player host, List<Player> players, Set<String> confirmedPlayerUsernames) {
         this.scheduledTime = scheduledTime;
         this.maxPlayers = maxPlayers;
         this.minPlayers = minPlayers;
@@ -51,6 +55,14 @@ public class Lobby {
         this.status = status;
         this.host = host;
         this.players = players;
+        this.confirmedPlayerUsernames = confirmedPlayerUsernames;
+    }
+
+    public Set<String> getConfirmedPlayerUsernames() {
+        if (confirmedPlayerUsernames == null) {
+            confirmedPlayerUsernames = new HashSet<>();
+        }
+        return confirmedPlayerUsernames;
     }
 
     @Override

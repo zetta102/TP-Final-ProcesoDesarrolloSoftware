@@ -21,6 +21,7 @@ public class NotificationSubscriber {
     public void onDomainEvent(ScrimStateChangedEvent event) {
         Notifier discord = notifierFactory.createDiscordNotifier();
         Notifier email = notifierFactory.createEmailNotifier();
+        Notifier push = notifierFactory.createPushNotifier();
 
         String message = String.format("El Lobby %s ha cambiado de estado a: %s",
                 event.getLobbyId(), event.getNuevoEstado());
@@ -28,6 +29,7 @@ public class NotificationSubscriber {
         // Retry with exponential backoff to tolerate transient provider errors.
         sendWithRetry(discord, "#scrim-updates", message, "DISCORD");
         sendWithRetry(email, "all-players@scrims.local", message, "EMAIL");
+        sendWithRetry(push, "all-players", message, "PUSH");
     }
 
     private void sendWithRetry(Notifier notifier, String target, String message, String channel) {

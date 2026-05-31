@@ -6,14 +6,10 @@ import com.pds.tp.domain.entity.Player;
 import lombok.Getter;
 import org.springframework.context.ApplicationEventPublisher;
 
-import java.util.HashSet;
-import java.util.Set;
-
 @Getter
 public class ScrimContext {
     private final Lobby lobby;
     private final ApplicationEventPublisher eventPublisher;
-    private final Set<Player> confirmedPlayers = new HashSet<>();
     private ScrimState state;
 
     public ScrimContext(Lobby lobby, ScrimState initialState, ApplicationEventPublisher eventPublisher) {

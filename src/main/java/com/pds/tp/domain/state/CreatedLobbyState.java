@@ -13,9 +13,12 @@ public class CreatedLobbyState implements ScrimState {
         if (!ctx.getLobby().getPlayers().contains(player)) {
             throw new IllegalStateException("El jugador no pertenece al lobby.");
         }
-        ctx.getConfirmedPlayers().add(player);
+        boolean isNewConfirmation = ctx.getLobby().getConfirmedPlayerUsernames().add(player.getUsername());
+        if (!isNewConfirmation) {
+            throw new IllegalStateException("El jugador ya había confirmado su participación.");
+        }
 
-        if (ctx.getConfirmedPlayers().size() == ctx.getLobby().getMaxPlayers()) {
+        if (ctx.getLobby().getConfirmedPlayerUsernames().size() == ctx.getLobby().getMaxPlayers()) {
             ctx.setState(new ConfirmedState());
         }
     }

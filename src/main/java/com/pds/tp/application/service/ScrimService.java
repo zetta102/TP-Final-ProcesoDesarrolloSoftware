@@ -32,6 +32,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -81,22 +82,33 @@ public class ScrimService {
     }
 
     public Lobby createScrim(CreateScrimRequest request) {
+        if (request.cantidadJugadoresPorLado() <= 0 || request.cantidadJugadoresPorLado() > 5) {
+            throw new IllegalArgumentException("La cantidad de jugadores por lado debe estar entre 1 y 5.");
+        }
+
         int minPlayers = request.cantidadJugadoresPorLado();
         int maxPlayers = request.cantidadTotalJugadores() > 0
                 ? request.cantidadTotalJugadores()
                 : request.cantidadJugadoresPorLado() * 2;
 
-        return createLobby(new LobbyData(
-                request.fecha(),
-                maxPlayers,
-                minPlayers,
-                request.rangoMin(),
-                request.rangoMax(),
-                request.latenciaMax(),
-                request.juego() != null ? request.juego() : request.formato(),
-                request.mapa(),
-                request.hostUserName()
-        ));
+        if (maxPlayers < 2 || maxPlayers > 10) {
+            throw new IllegalArgumentException("La cantidad total de jugadores debe estar entre 2 y 10.");
+        }
+
+        Player host = playerRepository.findByUsername(request.hostUserName());
+        LocalDateTime scheduledTime = parseScheduledDate(request.fecha());
+
+        Lobby lobby = new LobbyBuilder()
+                .conHost(host)
+                .conFecha(scheduledTime)
+                .conRegion(request.region())
+                .conFormato(minPlayers, maxPlayers)
+                .conRango(request.rangoMin(), request.rangoMax())
+                .conJuego(request.juego() != null ? request.juego() : request.formato(), request.mapa())
+                .conLatenciaMax(request.latenciaMax())
+                .build();
+
+        return lobbyRepository.save(lobby);
     }
 
     public LobbyConfirmation applyToLobby(LobbyApplication lobbyApplication) {
@@ -295,6 +307,18 @@ public class ScrimService {
             case "Cancelado" -> new CanceledState();
             default -> new SearchingState(); // Fallback
         };
+    }
+
+    private LocalDateTime parseScheduledDate(String rawDate) {
+        if (rawDate == null || rawDate.isBlank()) {
+            return LocalDateTime.now();
+        }
+
+        try {
+            return LocalDateTime.parse(rawDate);
+        } catch (DateTimeParseException ex) {
+            throw new IllegalArgumentException("Formato de fecha inválido. Use ISO-8601, por ejemplo 2026-06-18T21:00:00.");
+        }
     }
 }
 
