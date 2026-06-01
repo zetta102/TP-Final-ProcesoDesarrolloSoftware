@@ -21,7 +21,7 @@ public class TopicConfiguration {
 
     @Bean
     public ApplicationRunner runner(KafkaTemplate<String, String> template) {
-        return _ -> template.send("topic1", "test");
+        return args -> template.send("topic1", "test");
     }
 
     @KafkaListener(id = "myId", topics = "topic1")
@@ -29,3 +29,4 @@ public class TopicConfiguration {
         System.out.println(in);
     }
 }
+
