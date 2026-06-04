@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping({"/api/scrims", "/v1/api/scrims"})
+@RequestMapping("/v1/api/scrims")
 public class ScrimController {
     private static final String MESSAGE_KEY = "message";
 
