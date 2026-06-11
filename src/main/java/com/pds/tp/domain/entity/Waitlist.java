@@ -2,12 +2,7 @@ package com.pds.tp.domain.entity;
 
 import com.pds.tp.domain.valueobject.WaitlistStatus;
 import com.pds.tp.infrastructure.persistence.converter.WaitlistStatusConverter;
-import jakarta.persistence.Convert;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

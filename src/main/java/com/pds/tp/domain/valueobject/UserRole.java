@@ -24,6 +24,13 @@ public final class UserRole {
         };
     }
 
+    private static String normalize(String rawValue) {
+        if (rawValue == null || rawValue.isBlank()) {
+            throw new IllegalArgumentException("El rol no puede estar vacío.");
+        }
+        return rawValue.trim().toUpperCase(Locale.ROOT);
+    }
+
     public String value() {
         return value;
     }
@@ -59,13 +66,6 @@ public final class UserRole {
     @Override
     public int hashCode() {
         return Objects.hash(value);
-    }
-
-    private static String normalize(String rawValue) {
-        if (rawValue == null || rawValue.isBlank()) {
-            throw new IllegalArgumentException("El rol no puede estar vacío.");
-        }
-        return rawValue.trim().toUpperCase(Locale.ROOT);
     }
 }
 

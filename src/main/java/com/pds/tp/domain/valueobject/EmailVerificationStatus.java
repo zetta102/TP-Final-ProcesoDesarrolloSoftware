@@ -22,6 +22,13 @@ public final class EmailVerificationStatus {
         };
     }
 
+    private static String normalize(String rawValue) {
+        if (rawValue == null || rawValue.isBlank()) {
+            throw new IllegalArgumentException("El estado de verificación de email no puede estar vacío.");
+        }
+        return rawValue.trim().toUpperCase(Locale.ROOT);
+    }
+
     public boolean isPending() {
         return this == PENDING;
     }
@@ -57,13 +64,6 @@ public final class EmailVerificationStatus {
     @Override
     public int hashCode() {
         return Objects.hash(value);
-    }
-
-    private static String normalize(String rawValue) {
-        if (rawValue == null || rawValue.isBlank()) {
-            throw new IllegalArgumentException("El estado de verificación de email no puede estar vacío.");
-        }
-        return rawValue.trim().toUpperCase(Locale.ROOT);
     }
 }
 

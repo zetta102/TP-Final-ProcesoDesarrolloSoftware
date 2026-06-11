@@ -11,13 +11,13 @@
 
 ## 👥 Integrantes
 
-| Nombre y Apellido | LU |
-|---|---|
+| Nombre y Apellido        | LU      |
+|--------------------------|---------|
 | Indriago Ramírez, Miguel | 1196929 |
-| Maver, Joaquin | 1030299 |
-| Posse Presa, Matias | 1055352 |
-| Sanchez Carrizo, Naiara | 1196621 |
-| Sierra, Jose | 1193916 |
+| Maver, Joaquin           | 1030299 |
+| Posse Presa, Matias      | 1055352 |
+| Sanchez Carrizo, Naiara  | 1196621 |
+| Sierra, Jose             | 1193916 |
 
 ---
 
@@ -26,7 +26,8 @@
 eScrims permite a jugadores y organizadores de eSports:
 
 - **Registrarse y autenticarse** en la plataforma.
-- **Crear scrims** definiendo juego, formato (1v1, 3v3, 5v5), región, rango mínimo/máximo, latencia máxima, fecha/hora y modalidad.
+- **Crear scrims** definiendo juego, formato (1v1, 3v3, 5v5), región, rango mínimo/máximo, latencia máxima, fecha/hora y
+  modalidad.
 - **Buscar y postularse** a scrims compatibles con su perfil.
 - **Emparejar jugadores** mediante algoritmos intercambiables (por MMR, latencia o historial).
 - **Gestionar el ciclo de vida del scrim:**  
@@ -57,34 +58,34 @@ El proyecto sigue una arquitectura en capas inspirada en **MVC + Dominio**:
 
 ### Paquetes principales
 
-| Paquete | Responsabilidad |
-|---|---|
-| `controller` | Expone los endpoints REST y delega en los servicios |
-| `service` | Orquesta los casos de uso (`AuthService`, `ScrimService`) |
-| `entity` | Entidades JPA (`Player`, `Scrim`, `Lobby`, `ScrimStatistics`, `Report`) |
-| `model` | DTOs (records) de entrada/salida |
-| `repository` | Interfaces Spring Data JPA |
-| `config` | Spring Security, OpenTelemetry, filtros de trace ID |
+| Paquete      | Responsabilidad                                                         |
+|--------------|-------------------------------------------------------------------------|
+| `controller` | Expone los endpoints REST y delega en los servicios                     |
+| `service`    | Orquesta los casos de uso (`AuthService`, `ScrimService`)               |
+| `entity`     | Entidades JPA (`Player`, `Scrim`, `Lobby`, `ScrimStatistics`, `Report`) |
+| `model`      | DTOs (records) de entrada/salida                                        |
+| `repository` | Interfaces Spring Data JPA                                              |
+| `config`     | Spring Security, OpenTelemetry, filtros de trace ID                     |
 
 ---
 
 ## 🛠️ Stack tecnológico
 
-| Capa | Tecnología |
-|---|---|
-| Lenguaje | Java 25 |
-| Framework | Spring Boot 4.1 |
-| Web | Spring Web MVC |
-| Persistencia | Spring Data JPA + Hibernate |
-| Migraciones | Flyway |
-| Base de datos | PostgreSQL 17 |
-| Mensajería | Apache Kafka |
-| Mail | Spring Boot Starter Mail (JavaMail) |
-| Auth | Spring Security + OAuth2 Client |
-| Observabilidad | OpenTelemetry + Grafana LGTM stack |
-| Build | Maven (con wrapper `mvnw`) |
-| Tests | JUnit 5 + Testcontainers |
-| Contenedores | Docker Compose |
+| Capa           | Tecnología                          |
+|----------------|-------------------------------------|
+| Lenguaje       | Java 25                             |
+| Framework      | Spring Boot 4.1                     |
+| Web            | Spring Web MVC                      |
+| Persistencia   | Spring Data JPA + Hibernate         |
+| Migraciones    | Flyway                              |
+| Base de datos  | PostgreSQL 17                       |
+| Mensajería     | Apache Kafka                        |
+| Mail           | Spring Boot Starter Mail (JavaMail) |
+| Auth           | Spring Security + OAuth2 Client     |
+| Observabilidad | OpenTelemetry + Grafana LGTM stack  |
+| Build          | Maven (con wrapper `mvnw`)          |
+| Tests          | JUnit 5 + Testcontainers            |
+| Contenedores   | Docker Compose                      |
 
 ---
 
@@ -92,19 +93,20 @@ El proyecto sigue una arquitectura en capas inspirada en **MVC + Dominio**:
 
 El sistema implementa un mínimo de 4 patrones con foco en **State, Strategy, Observer y Abstract Factory**.
 
-| Patrón | Tipo | Aplicación en el sistema | Ubicación |
-|---|---|---|---|
-| **State** | Comportamiento | Ciclo de vida del Scrim: `Buscando`, `LobbyArmado`, `Confirmado`, `EnJuego`, `Finalizado`, `Cancelado` | `domain/state/` |
-| **Strategy** | Comportamiento | Algoritmos de matchmaking intercambiables: por MMR, por latencia, por historial | `domain/matchmaking/` |
-| **Observer** | Comportamiento | `DomainEventBus` con suscriptores que reaccionan a eventos de dominio | `domain/events/` |
-| **Abstract Factory** | Creacional | `NotifierFactory` crea notifiers por canal (Push/Email/Discord) y entorno (Dev/Prod) | `infra/notifications/` |
-| Builder *(opcional)* | Creacional | `ScrimBuilder` para armado incremental con validaciones | Pendiente |
-| Command *(opcional)* | Comportamiento | `AsignarRolCommand`, `SwapJugadoresCommand` con undo antes de confirmar | Pendiente |
-| Adapter *(opcional)* | Estructural | Integración con APIs externas: Discord, SendGrid, iCal | Pendiente |
-| Template Method *(opcional)* | Comportamiento | `GameValidator` con reglas de composición que varían por juego | Pendiente |
-| Chain of Responsibility *(opcional)* | Comportamiento | Pipeline de moderación de reportes | Pendiente |
+| Patrón                               | Tipo           | Aplicación en el sistema                                                                               | Ubicación              |
+|--------------------------------------|----------------|--------------------------------------------------------------------------------------------------------|------------------------|
+| **State**                            | Comportamiento | Ciclo de vida del Scrim: `Buscando`, `LobbyArmado`, `Confirmado`, `EnJuego`, `Finalizado`, `Cancelado` | `domain/state/`        |
+| **Strategy**                         | Comportamiento | Algoritmos de matchmaking intercambiables: por MMR, por latencia, por historial                        | `domain/matchmaking/`  |
+| **Observer**                         | Comportamiento | `DomainEventBus` con suscriptores que reaccionan a eventos de dominio                                  | `domain/events/`       |
+| **Abstract Factory**                 | Creacional     | `NotifierFactory` crea notifiers por canal (Push/Email/Discord) y entorno (Dev/Prod)                   | `infra/notifications/` |
+| Builder *(opcional)*                 | Creacional     | `ScrimBuilder` para armado incremental con validaciones                                                | Pendiente              |
+| Command *(opcional)*                 | Comportamiento | `AsignarRolCommand`, `SwapJugadoresCommand` con undo antes de confirmar                                | Pendiente              |
+| Adapter *(opcional)*                 | Estructural    | Integración con APIs externas: Discord, SendGrid, iCal                                                 | Pendiente              |
+| Template Method *(opcional)*         | Comportamiento | `GameValidator` con reglas de composición que varían por juego                                         | Pendiente              |
+| Chain of Responsibility *(opcional)* | Comportamiento | Pipeline de moderación de reportes                                                                     | Pendiente              |
 
-> Los estereotipos (`<<State>>`, `<<Strategy>>`, `<<Observer>>`, etc.) están marcados explícitamente en el diagrama de clases.
+> Los estereotipos (`<<State>>`, `<<Strategy>>`, `<<Observer>>`, etc.) están marcados explícitamente en el diagrama de
+> clases.
 
 ---
 
@@ -113,17 +115,20 @@ El sistema implementa un mínimo de 4 patrones con foco en **State, Strategy, Ob
 ### Entidades principales
 
 **Player** — usuario del sistema.  
-Atributos: `username`, `password`, `preferredRole`, `region`, `platform`, `availability`, `visibleRank`, `rank` (MMR), `gamesPlayed`, `wins`, `losses`, `kda`.
+Atributos: `username`, `password`, `preferredRole`, `region`, `platform`, `availability`, `visibleRank`, `rank` (MMR),
+`gamesPlayed`, `wins`, `losses`, `kda`.
 
 **Lobby** — sala de espera con cupos.  
-Atributos: `scheduledTime`, `maxPlayers`, `minPlayers`, `region`, `minRank`, `maxRank`, `maxPing`, `gameMode`, `map`, `status`, `host`, `players`.
+Atributos: `scheduledTime`, `maxPlayers`, `minPlayers`, `region`, `minRank`, `maxRank`, `maxPing`, `gameMode`, `map`,
+`status`, `host`, `players`.
 
 **Scrim** — el encuentro en sí.  
 Atributos: `lobbyId`, `gameMode`, `map`, `startTime`, `endTime`, `status`.
 
 **ScrimStatistics** — resultados post-partida: `redTeam`, `blueTeam`, `winningTeam`.
 
-**Report** — reportes de conducta: `scrim`, `player`, `reason`, `description`, `status`, `reportedAt`, `resolvedAt`, `resolutionDetails`.
+**Report** — reportes de conducta: `scrim`, `player`, `reason`, `description`, `status`, `reportedAt`, `resolvedAt`,
+`resolutionDetails`.
 
 ### Entidades pendientes
 
@@ -149,11 +154,11 @@ docker compose up -d
 
 Esto inicia tres servicios:
 
-| Servicio | Puerto | Descripción |
-|---|---|---|
-| `postgres` | 5432 | Base de datos principal (`user/secret/postgres`) |
-| `broker` (Kafka) | 9092 | Mensajería para eventos de dominio |
-| `observability` (Grafana LGTM) | 3000, 4317, 4318 | Logs, métricas y traces |
+| Servicio                       | Puerto           | Descripción                                      |
+|--------------------------------|------------------|--------------------------------------------------|
+| `postgres`                     | 5432             | Base de datos principal (`user/secret/postgres`) |
+| `broker` (Kafka)               | 9092             | Mensajería para eventos de dominio               |
+| `observability` (Grafana LGTM) | 3000, 4317, 4318 | Logs, métricas y traces                          |
 
 Grafana queda disponible en [http://localhost:3000](http://localhost:3000).
 
@@ -187,23 +192,23 @@ java -jar target/final-0.0.1-SNAPSHOT.jar
 
 ### Autenticación — `AuthController`
 
-| Método | Path | Body | Descripción |
-|---|---|---|---|
-| `POST` | `/auth/register` | `PlayerData` | Registra un nuevo jugador |
-| `POST` | `/auth/login` | `LoginData` | Autentica usuario y contraseña |
+| Método | Path             | Body         | Descripción                    |
+|--------|------------------|--------------|--------------------------------|
+| `POST` | `/auth/register` | `PlayerData` | Registra un nuevo jugador      |
+| `POST` | `/auth/login`    | `LoginData`  | Autentica usuario y contraseña |
 
 ### Scrims — `ScrimController`
 
-| Método | Path | Body | Descripción |
-|---|---|---|---|
-| `POST` | `/createLobby` | `LobbyData` | Crea un lobby asociado a un host |
-| `POST` | `/startScrim` | `ScrimData` | Inicia un scrim si hay cupos suficientes |
-| `GET` | `/findLobbies` | `FindLobbyData` | Busca lobbies por región, rango y latencia |
-| `POST` | `/{id}/cancelLobby` | — | Cancela un lobby en estado Started |
-| `POST` | `/{id}/finishScrim` | — | Finaliza un scrim en estado Started |
-| `POST` | `/{id}/postulaciones` | Pendiente | Postular jugador a un scrim |
-| `POST` | `/{id}/confirmaciones` | Pendiente | Confirmar participación |
-| `GET` | `/{id}/estadisticas` | Pendiente | Consultar estadísticas del scrim |
+| Método | Path                   | Body            | Descripción                                |
+|--------|------------------------|-----------------|--------------------------------------------|
+| `POST` | `/createLobby`         | `LobbyData`     | Crea un lobby asociado a un host           |
+| `POST` | `/startScrim`          | `ScrimData`     | Inicia un scrim si hay cupos suficientes   |
+| `GET`  | `/findLobbies`         | `FindLobbyData` | Busca lobbies por región, rango y latencia |
+| `POST` | `/{id}/cancelLobby`    | —               | Cancela un lobby en estado Started         |
+| `POST` | `/{id}/finishScrim`    | —               | Finaliza un scrim en estado Started        |
+| `POST` | `/{id}/postulaciones`  | Pendiente       | Postular jugador a un scrim                |
+| `POST` | `/{id}/confirmaciones` | Pendiente       | Confirmar participación                    |
+| `GET`  | `/{id}/estadisticas`   | Pendiente       | Consultar estadísticas del scrim           |
 
 ---
 
@@ -215,19 +220,19 @@ Todos los diagramas viven en `diagramas/` en formato **PlantUML** (`.puml` / `.t
 
 Ubicados en `diagramas/casosDeUso/`:
 
-| CU | Descripción |
-|---|---|
-| CU 1 | Registrar Usuario |
-| CU 2 | Autenticar Usuario |
-| CU 3 | Crear Scrim *(Builder + Template Method)* |
-| CU 4 | Postularse a Scrim *(State)* |
-| CU 5 | Emparejar y crear lobby *(Strategy + Observer)* |
-| CU 6 | Confirmar Emparejamiento |
-| CU 7 | Iniciar Scrim *(Scheduler)* |
-| CU 8 | Finalizar y cargar estadísticas |
-| CU 9 | Cancelar Scrim |
+| CU    | Descripción                                                 |
+|-------|-------------------------------------------------------------|
+| CU 1  | Registrar Usuario                                           |
+| CU 2  | Autenticar Usuario                                          |
+| CU 3  | Crear Scrim *(Builder + Template Method)*                   |
+| CU 4  | Postularse a Scrim *(State)*                                |
+| CU 5  | Emparejar y crear lobby *(Strategy + Observer)*             |
+| CU 6  | Confirmar Emparejamiento                                    |
+| CU 7  | Iniciar Scrim *(Scheduler)*                                 |
+| CU 8  | Finalizar y cargar estadísticas                             |
+| CU 9  | Cancelar Scrim                                              |
 | CU 10 | Notificar Eventos *(Observer + Abstract Factory + Adapter)* |
-| CU 11 | Moderar Reportes *(Chain of Responsibility)* |
+| CU 11 | Moderar Reportes *(Chain of Responsibility)*                |
 
 ### Otros diagramas
 

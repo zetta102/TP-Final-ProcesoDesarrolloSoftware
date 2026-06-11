@@ -26,6 +26,13 @@ public final class ReportStatus {
         };
     }
 
+    private static String normalize(String rawValue) {
+        if (rawValue == null || rawValue.isBlank()) {
+            throw new IllegalArgumentException("El estado del reporte no puede estar vacío.");
+        }
+        return rawValue.trim().toUpperCase(Locale.ROOT);
+    }
+
     public boolean isPendiente() {
         return this == PENDIENTE;
     }
@@ -69,13 +76,6 @@ public final class ReportStatus {
     @Override
     public int hashCode() {
         return Objects.hash(value);
-    }
-
-    private static String normalize(String rawValue) {
-        if (rawValue == null || rawValue.isBlank()) {
-            throw new IllegalArgumentException("El estado del reporte no puede estar vacío.");
-        }
-        return rawValue.trim().toUpperCase(Locale.ROOT);
     }
 }
 

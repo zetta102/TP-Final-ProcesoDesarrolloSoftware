@@ -2,9 +2,9 @@ package com.pds.tp.domain.entity;
 
 import com.pds.tp.domain.valueobject.EmailVerificationStatus;
 import com.pds.tp.domain.valueobject.UserRole;
-import jakarta.persistence.*;
 import com.pds.tp.infrastructure.persistence.converter.EmailVerificationStatusConverter;
 import com.pds.tp.infrastructure.persistence.converter.UserRoleConverter;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

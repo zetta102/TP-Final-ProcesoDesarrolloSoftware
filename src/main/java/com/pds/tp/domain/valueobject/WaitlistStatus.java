@@ -22,6 +22,13 @@ public final class WaitlistStatus {
         };
     }
 
+    private static String normalize(String rawValue) {
+        if (rawValue == null || rawValue.isBlank()) {
+            throw new IllegalArgumentException("El estado de lista de espera no puede estar vacío.");
+        }
+        return rawValue.trim().toUpperCase(Locale.ROOT);
+    }
+
     public boolean isPending() {
         return this == PENDING;
     }
@@ -53,13 +60,6 @@ public final class WaitlistStatus {
     @Override
     public int hashCode() {
         return Objects.hash(value);
-    }
-
-    private static String normalize(String rawValue) {
-        if (rawValue == null || rawValue.isBlank()) {
-            throw new IllegalArgumentException("El estado de lista de espera no puede estar vacío.");
-        }
-        return rawValue.trim().toUpperCase(Locale.ROOT);
     }
 }
 

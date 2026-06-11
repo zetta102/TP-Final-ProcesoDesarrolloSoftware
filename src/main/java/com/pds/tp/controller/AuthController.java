@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 @RestController
-@RequestMapping( "/v1/api/auth")
+@RequestMapping("/v1/api/auth")
 public class AuthController {
     private static final String MESSAGE_KEY = "mensaje";
 

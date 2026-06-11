@@ -17,9 +17,7 @@ import static com.pds.tp.support.TestFixtures.lobby;
 import static com.pds.tp.support.TestFixtures.player;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class NotificationSubscriberTest {
