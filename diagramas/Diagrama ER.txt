@@ -1,0 +1,466 @@
+@startuml DiagramaClasesDominio
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+hide empty members
+
+title Diagrama de Clases de Dominio – eScrims
+
+' ═══════════════════════════════════════════════════════════════
+' VALUE OBJECTS
+' ═══════════════════════════════════════════════════════════════
+package "domain.valueobject" <<Rectangle>> {
+
+    class EmailVerificationStatus <<ValueObject>> {
+        - value : String
+        + {static} PENDING : EmailVerificationStatus
+        + {static} VERIFIED : EmailVerificationStatus
+        + {static} of(rawValue : String) : EmailVerificationStatus
+        + isPending() : boolean
+        + isVerified() : boolean
+    }
+
+    class UserRole <<ValueObject>> {
+        - value : String
+        + {static} USER : UserRole
+        + {static} MODERATOR : UserRole
+        + {static} ADMIN : UserRole
+        + {static} of(rawValue : String) : UserRole
+    }
+
+    class ReportStatus <<ValueObject>> {
+        - value : String
+        + {static} PENDIENTE : ReportStatus
+        + {static} RESUELTO_AUTO : ReportStatus
+        + {static} RESUELTO_BOT : ReportStatus
+        + {static} ESCALADO_HUMANO : ReportStatus
+        + {static} of(rawValue : String) : ReportStatus
+        + isResolved() : boolean
+    }
+
+    class WaitlistStatus <<ValueObject>> {
+        - value : String
+        + {static} PENDING : WaitlistStatus
+        + {static} PROMOTED : WaitlistStatus
+        + {static} of(rawValue : String) : WaitlistStatus
+    }
+}
+
+' ═══════════════════════════════════════════════════════════════
+' SHARED
+' ═══════════════════════════════════════════════════════════════
+package "domain.shared" <<Rectangle>> {
+
+    class RankScale <<Utility>> {
+        - {static} RANK_VALUES : Map<String, Integer>
+        + {static} toValue(rank : String) : int
+        + {static} fromValue(tier : int) : String
+    }
+}
+
+' ═══════════════════════════════════════════════════════════════
+' ENTITIES
+' ═══════════════════════════════════════════════════════════════
+package "domain.entity" <<Rectangle>> {
+
+    class Player <<Entity>> {
+        - id : UUID
+        - username : String
+        - email : String
+        - password : String
+        - emailVerificationStatus : EmailVerificationStatus
+        - role : UserRole
+        - preferredRole : String
+        - region : String
+        - platform : String
+        - availability : String
+        - visibleRank : String
+        - averagePingMs : int
+        - rank : int
+        - gamesPlayed : int
+        - wins : int
+        - losses : int
+        - kda : double
+        - enabledNotificationChannels : String
+        - strikes : int
+        - banned : boolean
+        - verificationToken : String
+    }
+
+    class Lobby <<Entity>> {
+        - id : UUID
+        - scheduledTime : LocalDateTime
+        - maxPlayers : int
+        - minPlayers : int
+        - region : String
+        - minRank : String
+        - maxRank : String
+        - maxPing : int
+        - gameMode : String
+        - map : String
+        - status : String
+        - duration : String
+        - modality : String
+        - cancelReason : String
+        - confirmedPlayerUsernames : Set<String>
+        + getConfirmedPlayerUsernames() : Set<String>
+    }
+
+    class Scrim <<Entity>> {
+        - id : UUID
+        - gameMode : String
+        - map : String
+        - startTime : LocalDateTime
+        - endTime : LocalDateTime
+        - status : String
+    }
+
+    class ScrimStatistics <<Entity>> {
+        - id : UUID
+        - winningTeam : String
+        - status : String
+        - startTime : LocalDateTime
+        - endTime : LocalDateTime
+    }
+
+    class PlayerScrimStats <<Entity>> {
+        - id : UUID
+        - kills : int
+        - deaths : int
+        - assists : int
+        - mvp : boolean
+        + getKdaRatio() : double
+    }
+
+    class Report <<Entity>> {
+        - id : UUID
+        - reason : String
+        - description : String
+        - status : ReportStatus
+        - reportedAt : String
+        - resolvedAt : String
+        - resolutionDetails : String
+    }
+
+    class SavedSearch <<Entity>> {
+        - id : UUID
+        - game : String
+        - region : String
+        - minRank : String
+        - maxRank : String
+        - maxLatency : Integer
+        - format : String
+        + matchesLobby(lobby : Lobby) : boolean
+    }
+
+    class Waitlist <<Entity>> {
+        - id : UUID
+        - desiredRole : String
+        - status : WaitlistStatus
+        - createdAt : LocalDateTime
+        - promotedAt : LocalDateTime
+    }
+}
+
+' --- Entity relationships ---
+Lobby "1" --> "1" Player : host
+Lobby "1" --> "0..*" Player : players
+Scrim "1" --> "1" Lobby : lobbyId
+ScrimStatistics "1" --> "1" Scrim : scrimId
+ScrimStatistics "1" --> "0..*" Player : redTeam
+ScrimStatistics "1" --> "0..*" Player : blueTeam
+PlayerScrimStats "0..*" --> "1" ScrimStatistics : scrimStatistics
+PlayerScrimStats "0..*" --> "1" Player : player
+Report "0..*" --> "1" Scrim : scrimId
+Report "0..*" --> "1" Player : reportedPlayer
+Report "1" --> "1" Player : reportingPlayer
+SavedSearch "0..*" --> "1" Player : player
+Waitlist "0..*" --> "1" Lobby : lobby
+Waitlist "0..*" --> "1" Player : player
+
+' ═══════════════════════════════════════════════════════════════
+' STATE PATTERN
+' ═══════════════════════════════════════════════════════════════
+package "domain.state" <<Rectangle>> {
+
+    interface ScrimState <<State>> {
+        + postular(ctx : ScrimContext, player : Player, role : String)
+        + confirmar(ctx : ScrimContext, player : Player)
+        + iniciar(ctx : ScrimContext)
+        + finalizar(ctx : ScrimContext)
+        + cancelar(ctx : ScrimContext)
+        + getStatusName() : String
+    }
+
+    class ScrimContext {
+        - lobby : Lobby
+        - state : ScrimState
+        - eventPublisher : ApplicationEventPublisher
+        + setState(state : ScrimState)
+        + postular(player : Player, role : String)
+        + confirmar(player : Player)
+        + iniciar()
+        + finalizar()
+        + cancelar()
+    }
+
+    abstract class AbstractOperationalState <<State>> {
+        # postularRejectedMessage() : String
+        # confirmarRejectedMessage() : String
+        # iniciarRejectedMessage() : String
+        # finalizarRejectedMessage() : String
+        # cancelarRejectedMessage() : String
+    }
+
+    abstract class AbstractTerminalState <<State>> {
+        # defaultTerminalMessage() : String
+        # finalizeMessage() : String
+        # cancelMessage() : String
+    }
+
+    class SearchingState <<State>> {
+        + getStatusName() : String {"Buscando"}
+    }
+
+    class CreatedLobbyState <<State>> {
+        + getStatusName() : String {"LobbyArmado"}
+    }
+
+    class ConfirmedState <<State>> {
+        + getStatusName() : String {"Confirmado"}
+    }
+
+    class PlayingState <<State>> {
+        + getStatusName() : String {"EnJuego"}
+    }
+
+    class FinishedState <<State>> {
+        + getStatusName() : String {"Finalizado"}
+    }
+
+    class CanceledState <<State>> {
+        + getStatusName() : String {"Cancelado"}
+    }
+}
+
+ScrimState <|.. SearchingState
+ScrimState <|.. CreatedLobbyState
+ScrimState <|.. AbstractOperationalState
+ScrimState <|.. AbstractTerminalState
+AbstractOperationalState <|-- ConfirmedState
+AbstractOperationalState <|-- PlayingState
+AbstractTerminalState <|-- FinishedState
+AbstractTerminalState <|-- CanceledState
+ScrimContext o--> ScrimState : state
+ScrimContext --> Lobby : lobby
+
+' State transitions (notes)
+note bottom of SearchingState
+  Buscando → (cupo completo) → LobbyArmado
+end note
+
+note bottom of CreatedLobbyState
+  LobbyArmado → (todos confirman) → Confirmado
+end note
+
+' ═══════════════════════════════════════════════════════════════
+' STRATEGY PATTERN
+' ═══════════════════════════════════════════════════════════════
+package "domain.strategy" <<Rectangle>> {
+
+    interface MatchmakingStrategy <<Strategy>> {
+        + seleccionar(candidatos : List<Player>, lobby : Lobby) : List<Player>
+        + remainingSlots(lobby : Lobby) : int
+    }
+
+    class ByMMRStrategy <<Strategy>> {
+        + seleccionar(candidatos : List<Player>, lobby : Lobby) : List<Player>
+    }
+
+    class ByLatencyStrategy <<Strategy>> {
+        + seleccionar(candidatos : List<Player>, lobby : Lobby) : List<Player>
+    }
+
+    class ByHistoryStrategy <<Strategy>> {
+        + seleccionar(candidatos : List<Player>, lobby : Lobby) : List<Player>
+        - computeCompatibilityScore(player : Player) : double
+    }
+}
+
+MatchmakingStrategy <|.. ByMMRStrategy
+MatchmakingStrategy <|.. ByLatencyStrategy
+MatchmakingStrategy <|.. ByHistoryStrategy
+
+' ═══════════════════════════════════════════════════════════════
+' BUILDER PATTERN
+' ═══════════════════════════════════════════════════════════════
+package "domain.builder" <<Rectangle>> {
+
+    class ScrimBuilder <<Builder>> {
+        - scheduledTime : LocalDateTime
+        - maxPlayers : int
+        - minPlayers : int
+        - region : String
+        - minRank : String
+        - maxRank : String
+        - maxPing : int
+        - gameMode : String
+        - map : String
+        - duration : String
+        - modality : String
+        - host : Player
+        - gameValidator : GameValidator
+        + host(host : Player) : ScrimBuilder
+        + region(region : String) : ScrimBuilder
+        + fecha(scheduledTime : LocalDateTime) : ScrimBuilder
+        + formato(min : int, max : int) : ScrimBuilder
+        + rango(min : String, max : String) : ScrimBuilder
+        + juego(gameMode : String, map : String) : ScrimBuilder
+        + latenciaMax(maxPing : int) : ScrimBuilder
+        + duracion(duration : String) : ScrimBuilder
+        + modalidad(modality : String) : ScrimBuilder
+        + validator(validator : GameValidator) : ScrimBuilder
+        + build() : Lobby
+    }
+}
+
+ScrimBuilder ..> Lobby : <<creates>>
+ScrimBuilder ..> GameValidator : uses
+
+' ═══════════════════════════════════════════════════════════════
+' TEMPLATE METHOD PATTERN (Validation)
+' ═══════════════════════════════════════════════════════════════
+package "domain.validation" <<Rectangle>> {
+
+    abstract class GameValidator <<TemplateMethod>> {
+        + {final} validate(lobby : Lobby)
+        # validateTeamSize(lobby : Lobby)
+        # {abstract} validateRoles(lobby : Lobby)
+        # {abstract} validateGameSpecificRules(lobby : Lobby)
+    }
+
+    class DefaultGameValidator <<TemplateMethod>>
+    class StrictGameFormatValidator <<TemplateMethod>>
+    class FlexibleGameFormatValidator <<TemplateMethod>>
+
+    class GameValidatorFactory {
+        - validators : Map<String, GameValidator>
+        - defaultValidator : GameValidator
+        + resolve(gameName : String) : GameValidator
+    }
+}
+
+GameValidator <|-- DefaultGameValidator
+GameValidator <|-- StrictGameFormatValidator
+GameValidator <|-- FlexibleGameFormatValidator
+GameValidatorFactory --> GameValidator : resolves
+
+' ═══════════════════════════════════════════════════════════════
+' CHAIN OF RESPONSIBILITY PATTERN (Moderation)
+' ═══════════════════════════════════════════════════════════════
+package "domain.moderation" <<Rectangle>> {
+
+    abstract class ModerationNode <<ChainOfResponsibility>> {
+        # next : ModerationNode
+        + {abstract} handle(report : Report, repo : ReportRepository)
+        # passToNext(report : Report, repo : ReportRepository)
+    }
+
+    class AutoResolverNode <<ChainOfResponsibility>> {
+        + handle(report : Report, repo : ReportRepository)
+    }
+
+    class BotAnalyzerNode <<ChainOfResponsibility>> {
+        - toxicKeywords : List<String>
+        + handle(report : Report, repo : ReportRepository)
+    }
+
+    class HumanModNode <<ChainOfResponsibility>> {
+        + handle(report : Report, repo : ReportRepository)
+    }
+}
+
+ModerationNode <|-- AutoResolverNode
+ModerationNode <|-- BotAnalyzerNode
+ModerationNode <|-- HumanModNode
+ModerationNode --> ModerationNode : next
+
+' ═══════════════════════════════════════════════════════════════
+' DOMAIN EVENTS (Observer trigger)
+' ═══════════════════════════════════════════════════════════════
+package "domain.event" <<Rectangle>> {
+
+    class ScrimStateChangedEvent <<DomainEvent>> {
+        - lobbyId : UUID
+        - nuevoEstado : String
+    }
+
+    class ScrimCreatedEvent <<DomainEvent>> {
+        - lobbyId : UUID
+        - game : String
+        - region : String
+    }
+}
+
+' ═══════════════════════════════════════════════════════════════
+' OBSERVER + ABSTRACT FACTORY (Notifications – Infrastructure)
+' ═══════════════════════════════════════════════════════════════
+package "infrastructure.notification" <<Rectangle>> {
+
+    interface Notifier <<Adapter>> {
+        + sendNotification(channelOrUser : String, message : String)
+    }
+
+    interface NotifierFactory <<AbstractFactory>> {
+        + createPushNotifier() : Notifier
+        + createEmailNotifier() : Notifier
+        + createDiscordNotifier() : Notifier
+        + createICalNotifier() : Notifier
+    }
+
+    class DevNotifierFactory <<AbstractFactory>> {
+        + createPushNotifier() : Notifier
+        + createEmailNotifier() : Notifier
+        + createDiscordNotifier() : Notifier
+        + createICalNotifier() : Notifier
+    }
+
+    class ProdNotifierFactory <<AbstractFactory>> {
+        + createPushNotifier() : Notifier
+        + createEmailNotifier() : Notifier
+        + createDiscordNotifier() : Notifier
+        + createICalNotifier() : Notifier
+    }
+
+    class DiscordAdapter <<Adapter>>
+    class SendGridAdapter <<Adapter>>
+    class ICalAdapter <<Adapter>>
+
+    class NotificationSubscriber <<Observer>> {
+        - notifierFactory : NotifierFactory
+        + onDomainEvent(event : ScrimStateChangedEvent)
+        + onScrimCreated(event : ScrimCreatedEvent)
+        - sendWithRetry(notifier : Notifier, target : String, message : String, channel : String)
+    }
+}
+
+NotifierFactory <|.. DevNotifierFactory
+NotifierFactory <|.. ProdNotifierFactory
+Notifier <|.. DiscordAdapter
+Notifier <|.. SendGridAdapter
+Notifier <|.. ICalAdapter
+NotifierFactory ..> Notifier : <<creates>>
+NotificationSubscriber --> NotifierFactory : uses
+NotificationSubscriber ..> ScrimStateChangedEvent : <<listens>>
+NotificationSubscriber ..> ScrimCreatedEvent : <<listens>>
+
+' ═══════════════════════════════════════════════════════════════
+' CROSS-PACKAGE RELATIONSHIPS
+' ═══════════════════════════════════════════════════════════════
+ScrimContext ..> ScrimStateChangedEvent : publishes
+Player --> EmailVerificationStatus
+Player --> UserRole
+Report --> ReportStatus
+Waitlist --> WaitlistStatus
+
+@enduml
+
