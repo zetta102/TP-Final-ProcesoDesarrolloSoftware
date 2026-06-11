@@ -23,10 +23,13 @@ public class NotificationSubscriber {
 
     private final NotifierFactory notifierFactory;
     private final LobbyRepository lobbyRepository;
+    private final KafkaEventPublisher kafkaEventPublisher;
 
-    public NotificationSubscriber(NotifierFactory notifierFactory, LobbyRepository lobbyRepository) {
+    public NotificationSubscriber(NotifierFactory notifierFactory, LobbyRepository lobbyRepository,
+                                  KafkaEventPublisher kafkaEventPublisher) {
         this.notifierFactory = notifierFactory;
         this.lobbyRepository = lobbyRepository;
+        this.kafkaEventPublisher = kafkaEventPublisher;
     }
 
     @EventListener
@@ -49,6 +52,9 @@ public class NotificationSubscriber {
             sendWithRetry(push, pushTarget, message, "PUSH");
         }
         sendWithRetry(ical, "calendar@scrims.local", message, "ICAL");
+
+        // Enqueue to Kafka for async downstream consumers.
+        publishToKafka(event.getLobbyId().toString(), message);
     }
 
     @EventListener
@@ -59,6 +65,17 @@ public class NotificationSubscriber {
         sendWithRetry(notifierFactory.createEmailNotifier(), "all-players@scrims.local", message, "EMAIL");
         sendWithRetry(notifierFactory.createPushNotifier(), "all-players", message, "PUSH");
         sendWithRetry(notifierFactory.createICalNotifier(), "calendar@scrims.local", message, "ICAL");
+
+        // Enqueue to Kafka for async downstream consumers.
+        publishToKafka(event.getLobbyId().toString(), message);
+    }
+
+    private void publishToKafka(String key, String message) {
+        try {
+            kafkaEventPublisher.publish(key, message);
+        } catch (Exception ex) {
+            log.warn("Failed to publish event to Kafka (non-critical): {}", ex.getMessage());
+        }
     }
 
     private void sendWithRetry(Notifier notifier, String target, String message, String channel) {

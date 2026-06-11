@@ -19,6 +19,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static com.pds.tp.support.TestFixtures.lobby;
@@ -92,6 +93,12 @@ class ReportServiceTest {
             setId(report, UUID.randomUUID());
             return report;
         });
+        when(reportRepository.findById(any(UUID.class))).thenAnswer(invocation -> {
+            // Simulate re-read after chain; status stays "Created" because autoResolver is mocked (no-op).
+            Report report = new Report(scrim, reporting, reported, "AFK", "Context Description Placeholder");
+            setId(report, invocation.getArgument(0));
+            return Optional.of(report);
+        });
 
         ReportApplication app = new ReportApplication("r1", UUID.randomUUID().toString(), "r2", "AFK");
 
@@ -101,7 +108,7 @@ class ReportServiceTest {
         assertEquals("r1", confirmation.reportingPlayerUsername());
         assertEquals("r2", confirmation.reportedPlayerUsername());
         assertEquals("Created", confirmation.status());
-        verify(autoResolver).handle(any(Report.class));
+        verify(autoResolver).handle(any(Report.class), any(ReportRepository.class));
     }
 
     private Scrim buildScrim(String status) {

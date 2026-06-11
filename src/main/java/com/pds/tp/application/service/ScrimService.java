@@ -20,7 +20,6 @@ import com.pds.tp.infrastructure.repository.ScrimStatisticsRepository;
 import com.pds.tp.infrastructure.repository.WaitlistRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -28,7 +27,6 @@ import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -64,21 +62,6 @@ public class ScrimService {
         this.stateResolver = stateResolver;
     }
 
-    public Lobby createLobby(LobbyData lobbyData) {
-        Player player = playerRepository.findByUsername(lobbyData.hostUserName());
-
-        Lobby lobby = new ScrimBuilder()
-                .host(player)
-                .formato(lobbyData.minPlayers(), lobbyData.maxPlayers())
-                .rango(lobbyData.minRank(), lobbyData.maxRank())
-                .juego(lobbyData.gameMode(), lobbyData.map())
-                .latenciaMax(lobbyData.maxPing())
-                .build();
-
-        Lobby savedLobby = lobbyRepository.save(lobby);
-        eventPublisher.publishEvent(new ScrimCreatedEvent(this, savedLobby.getId(), savedLobby.getGameMode(), savedLobby.getRegion()));
-        return savedLobby;
-    }
 
     public Lobby createScrim(CreateScrimRequest request) {
         if (request.playersPerSide() <= 0 || request.playersPerSide() > 5) {
@@ -107,7 +90,9 @@ public class ScrimService {
                 .latenciaMax(request.maxLatency())
                 .build();
 
-        return lobbyRepository.save(lobby);
+        Lobby savedLobby = lobbyRepository.save(lobby);
+        eventPublisher.publishEvent(new ScrimCreatedEvent(this, savedLobby.getId(), savedLobby.getGameMode(), savedLobby.getRegion()));
+        return savedLobby;
     }
 
     public LobbyConfirmation applyToLobby(LobbyApplication lobbyApplication) {
@@ -149,10 +134,6 @@ public class ScrimService {
         }
     }
 
-    @Deprecated
-    public String confirmarParticipacion(UUID lobbyId, String username) {
-        return confirmParticipation(lobbyId, username);
-    }
 
     public Scrim startScrim(ScrimData scrimData) {
         Lobby lobby = lobbyRepository.getReferenceById(UUID.fromString(scrimData.lobbyId()));
@@ -272,8 +253,7 @@ public class ScrimService {
                 .toList();
     }
 
-    @Scheduled(fixedRate = 60, timeUnit = TimeUnit.SECONDS)
-    public void autoMatchmakingCron() {
+    public void runMatchmakingPass() {
         List<Lobby> lobbies = lobbyRepository.findAllByStatusEquals(STATUS_BUSCANDO);
         // Use the full player pool as matchmaking candidates for this scheduled prototype flow.
         List<Player> availablePlayers = playerRepository.findAll();

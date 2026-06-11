@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -28,9 +29,13 @@ public class Report {
     private Player reportedPlayer;
     private String reason;
     private String description;
+    @Setter
     private String status;
+    @Setter
     private String reportedAt;
+    @Setter
     private String resolvedAt;
+    @Setter
     private String resolutionDetails;
 
     public Report(Scrim scrimId, Player reportingPlayer, Player reportedPlayer, String reason, String description) {

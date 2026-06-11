@@ -30,5 +30,10 @@ public class ScrimLifecycleScheduler {
             log.info("Scheduler lifecycle update -> started: {}, finalized: {}", started, finalized);
         }
     }
+
+    @Scheduled(fixedRate = 60, timeUnit = TimeUnit.SECONDS)
+    public void runMatchmaking() {
+        scrimService.runMatchmakingPass();
+    }
 }
 

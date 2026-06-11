@@ -31,6 +31,9 @@ class NotificationSubscriberTest {
     private LobbyRepository lobbyRepository;
 
     @Mock
+    private KafkaEventPublisher kafkaEventPublisher;
+
+    @Mock
     private Notifier emailNotifier;
 
     @Mock
@@ -56,7 +59,7 @@ class NotificationSubscriberTest {
         when(notifierFactory.createICalNotifier()).thenReturn(iCalNotifier);
         when(lobbyRepository.findById(lobbyId)).thenReturn(Optional.of(scrimLobby));
 
-        NotificationSubscriber subscriber = new NotificationSubscriber(notifierFactory, lobbyRepository);
+        NotificationSubscriber subscriber = new NotificationSubscriber(notifierFactory, lobbyRepository, kafkaEventPublisher);
         subscriber.onDomainEvent(new ScrimStateChangedEvent(this, lobbyId, "Confirmado"));
 
         verify(emailNotifier, times(1)).sendNotification(eq("host@test.com"), contains("Confirmado"));

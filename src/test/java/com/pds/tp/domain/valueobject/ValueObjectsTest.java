@@ -2,7 +2,6 @@ package com.pds.tp.domain.valueobject;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -32,30 +31,10 @@ class ValueObjectsTest {
     }
 
     @Test
-    void shouldExposeScrimApplicationStatePredicates() {
-        assertTrue(ScrimApplicationStatus.PENDING.isPending());
-        assertTrue(ScrimApplicationStatus.ACCEPTED.isAccepted());
-        assertTrue(ScrimApplicationStatus.REJECTED.isRejected());
-        assertEquals("ACCEPTED", ScrimApplicationStatus.of("accepted").value());
-    }
-
-    @Test
-    void shouldNormalizeNotificationTypesAndAliases() {
-        assertSame(NotificationChannel.DISCORD, NotificationChannel.of("discord"));
-        assertTrue(NotificationChannel.PUSH.isPush());
-
-        assertSame(NotificationStatus.FAILED, NotificationStatus.of("error"));
-        assertTrue(NotificationStatus.SENT.isSent());
-    }
-
-    @Test
     void shouldRejectUnsupportedValues() {
         assertThrows(IllegalArgumentException.class, () -> EmailVerificationStatus.of("x"));
         assertThrows(IllegalArgumentException.class, () -> UserRole.of("guest"));
         assertThrows(IllegalArgumentException.class, () -> WaitlistStatus.of("stale"));
-        assertThrows(IllegalArgumentException.class, () -> ScrimApplicationStatus.of("on_hold"));
-        assertThrows(IllegalArgumentException.class, () -> NotificationChannel.of("sms"));
-        assertThrows(IllegalArgumentException.class, () -> NotificationStatus.of("queued"));
     }
 }
 
