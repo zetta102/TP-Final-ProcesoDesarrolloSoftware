@@ -1,0 +1,74 @@
+@startuml
+actor "Jugador" as Player
+control "ScrimController" as API
+control "ScrimFacade" as Facade
+control "ReportService" as Service
+control "AutoResolverNode" as Auto
+control "BotAnalyzerNode" as Bot
+control "HumanModNode" as Human
+entity "Report" as Model
+entity "Scrim" as ScrimModel
+database "PostgreSQL" as DB
+
+Player -> API : POST /v1/api/scrims/{id}/reportes (ReportApplication)
+API -> Facade : reportPlayer(id, request)
+Facade -> Service : processReport(reportApplication)
+
+Service -> DB : playerRepository.findByUsername(reportingPlayerUsername)
+DB --> Service : reportingPlayer
+Service -> DB : playerRepository.findByUsername(reportedPlayerUsername)
+DB --> Service : reportedPlayer
+Service -> DB : scrimRepository.getReferenceById(scrimId)
+DB --> Service : scrim
+
+alt scrim.status != "Finalizado"
+    Service --> Facade : IllegalStateException
+    note right: "No se puede reportar jugadores\nde un scrim no finalizado."
+end
+
+Service -> Model : new Report(scrim, reportingPlayer, reportedPlayer, reason, description)
+Service -> Model : status = PENDIENTE, reportedAt = now
+Service -> DB : reportRepository.save(report)
+DB --> Service : savedReport
+
+== Chain of Responsibility: Pipeline de Moderación ==
+Service -> Auto : handle(report, reportRepository)
+
+Auto -> Auto : checks: motivo en [AFK, LEAVER, TOXICIDAD_LEVE]
+alt Auto-resolvable (motivo conocido)
+    Auto -> Model : setStatus(RESUELTO_AUTO)
+    Auto -> Model : setResolvedAt(now)
+    Auto -> Model : setResolutionDetails("Resolución automática...")
+    Auto -> DB : reportRepository.save(report)
+else Escalar a Bot
+    Auto -> Bot : passToNext(report, reportRepository)
+
+    Bot -> Bot : analyzePatterns: ¿reincidente? (reportedPlayer con reportes previos)
+    alt Patrón detectado
+        Bot -> Model : setStatus(RESUELTO_BOT)
+        Bot -> Model : setResolutionDetails("Bot: patrón de conducta detectado...")
+        Bot -> DB : reportRepository.save(report)
+    else Escalar a Humano
+        Bot -> Human : passToNext(report, reportRepository)
+
+        Human -> Human : derivar a moderador humano
+        Human -> Model : setStatus(ESCALADO_HUMANO)
+        Human -> Model : setResolutionDetails("Escalado a moderación humana...")
+        Human -> DB : reportRepository.save(report)
+    end
+end
+
+== Respuesta ==
+Service -> DB : reportRepository.findById(report.id)
+DB --> Service : report (con status actualizado)
+
+Service --> Facade : ReportConfirmation(id, reportingPlayer, scrimId, reportedPlayer, status)
+Facade --> API : ReportConfirmation
+API --> Player : 201 Created
+
+note bottom
+    Precondición: El scrim debe estar en estado "Finalizado".
+    Cualquier jugador del scrim puede reportar a otro.
+    El actor es "Jugador", no exclusivamente "Moderador".
+end note
+@enduml

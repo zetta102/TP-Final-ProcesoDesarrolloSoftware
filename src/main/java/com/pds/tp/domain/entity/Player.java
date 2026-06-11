@@ -1,5 +1,9 @@
 package com.pds.tp.domain.entity;
 
+import com.pds.tp.domain.valueobject.EmailVerificationStatus;
+import com.pds.tp.domain.valueobject.UserRole;
+import com.pds.tp.infrastructure.persistence.converter.EmailVerificationStatusConverter;
+import com.pds.tp.infrastructure.persistence.converter.UserRoleConverter;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -24,10 +28,10 @@ public class Player {
     private String email;
     private String password;
     @Setter
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = EmailVerificationStatusConverter.class)
     private EmailVerificationStatus emailVerificationStatus;
     @Setter
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = UserRoleConverter.class)
     private UserRole role;
     private String preferredRole;
     private String region;
@@ -37,17 +41,30 @@ public class Player {
     private String visibleRank;
     @Setter
     private int averagePingMs;
+    @Setter
     private int rank;
+    @Setter
     private int gamesPlayed;
+    @Setter
     private int wins;
+    @Setter
     private int losses;
+    @Setter
     private double kda;
+    @Setter
+    private String enabledNotificationChannels;
+    @Setter
+    private int strikes;
+    @Setter
+    private boolean banned;
+    @Setter
+    private String verificationToken;
 
     public Player(String username, String email, String password, String preferredRole, String region, String platform, String availability) {
         this.username = username;
         this.email = email;
         this.password = password;
-        this.emailVerificationStatus = EmailVerificationStatus.PENDIENTE;
+        this.emailVerificationStatus = EmailVerificationStatus.PENDING;
         this.role = UserRole.USER;
         this.preferredRole = preferredRole;
         this.region = region;
@@ -60,6 +77,10 @@ public class Player {
         this.wins = 0;
         this.losses = 0;
         this.kda = 0.0;
+        this.enabledNotificationChannels = "PUSH,EMAIL,DISCORD,ICAL";
+        this.strikes = 0;
+        this.banned = false;
+        this.verificationToken = null;
     }
 
     @Override

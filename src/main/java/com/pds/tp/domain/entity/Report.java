@@ -1,9 +1,12 @@
 package com.pds.tp.domain.entity;
 
+import com.pds.tp.domain.valueobject.ReportStatus;
+import com.pds.tp.infrastructure.persistence.converter.ReportStatusConverter;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -28,9 +31,14 @@ public class Report {
     private Player reportedPlayer;
     private String reason;
     private String description;
-    private String status;
+    @Setter
+    @Convert(converter = ReportStatusConverter.class)
+    private ReportStatus status;
+    @Setter
     private String reportedAt;
+    @Setter
     private String resolvedAt;
+    @Setter
     private String resolutionDetails;
 
     public Report(Scrim scrimId, Player reportingPlayer, Player reportedPlayer, String reason, String description) {
@@ -39,7 +47,7 @@ public class Report {
         this.reportedPlayer = reportedPlayer;
         this.reason = reason;
         this.description = description;
-        this.status = "Created";
+        this.status = ReportStatus.PENDIENTE;
         this.reportedAt = LocalDate.now().toString();
         this.resolvedAt = null;
         this.resolutionDetails = null;
@@ -76,5 +84,3 @@ public class Report {
                 .toString();
     }
 }
-
-

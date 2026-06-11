@@ -55,6 +55,8 @@ public final class TestFixtures {
                 DEFAULT_GAME,
                 map,
                 status,
+                null,
+                null,
                 host,
                 lobbyPlayers,
                 new HashSet<>()

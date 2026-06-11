@@ -9,11 +9,9 @@ import com.pds.tp.domain.entity.Scrim;
 import com.pds.tp.domain.entity.ScrimStatistics;
 import com.pds.tp.domain.state.ScrimStateResolver;
 import com.pds.tp.domain.strategy.ByMMRStrategy;
-import com.pds.tp.infrastructure.repository.LobbyRepository;
-import com.pds.tp.infrastructure.repository.PlayerRepository;
-import com.pds.tp.infrastructure.repository.ScrimRepository;
-import com.pds.tp.infrastructure.repository.ScrimStatisticsRepository;
-import com.pds.tp.infrastructure.repository.WaitlistRepository;
+import com.pds.tp.domain.validation.DefaultGameValidator;
+import com.pds.tp.domain.validation.GameValidatorFactory;
+import com.pds.tp.infrastructure.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,9 +24,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static com.pds.tp.support.TestFixtures.lobby;
-import static com.pds.tp.support.TestFixtures.player;
-import static com.pds.tp.support.TestFixtures.setId;
+import static com.pds.tp.support.TestFixtures.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -50,10 +46,16 @@ class ScrimServiceFlowIntegrationTest {
     private ScrimStatisticsRepository scrimStatisticsRepository;
 
     @Mock
+    private PlayerScrimStatsRepository playerScrimStatsRepository;
+
+    @Mock
     private WaitlistRepository waitlistRepository;
 
     @Mock
     private ApplicationEventPublisher eventPublisher;
+
+    @Mock
+    private MMRRecalculator mmrRecalculator;
 
     private ScrimService scrimService;
 
@@ -64,10 +66,13 @@ class ScrimServiceFlowIntegrationTest {
                 lobbyRepository,
                 playerRepository,
                 scrimStatisticsRepository,
+                playerScrimStatsRepository,
                 waitlistRepository,
                 eventPublisher,
                 new ByMMRStrategy(),
-                new ScrimStateResolver()
+                new ScrimStateResolver(),
+                new GameValidatorFactory(new DefaultGameValidator(), new DefaultGameValidator(), new DefaultGameValidator()),
+                mmrRecalculator
         );
     }
 
@@ -89,15 +94,15 @@ class ScrimServiceFlowIntegrationTest {
 
         LobbyConfirmation applyResult = scrimService.applyToLobby(new LobbyApplication("candidate", lobbyId.toString(), "FLEX"));
 
-        assertEquals("Confirmed", applyResult.status());
+        assertEquals("Aceptado", applyResult.status());
         assertEquals("LobbyArmado", scrimLobby.getStatus());
         assertEquals(2, scrimLobby.getPlayers().size());
 
         String confirmHost = scrimService.confirmParticipation(lobbyId, "host");
         String confirmCandidate = scrimService.confirmParticipation(lobbyId, "candidate");
 
-        assertEquals("Player confirmed successfully.", confirmHost);
-        assertEquals("Player confirmed successfully.", confirmCandidate);
+        assertEquals("Jugador confirmado exitosamente.", confirmHost);
+        assertEquals("Jugador confirmado exitosamente.", confirmCandidate);
         assertEquals("Confirmado", scrimLobby.getStatus());
 
         when(scrimRepository.findByLobbyId(scrimLobby)).thenReturn(Optional.empty());
@@ -126,7 +131,7 @@ class ScrimServiceFlowIntegrationTest {
 
         String finishResult = scrimService.finishScrimById(scrim.getId());
 
-        assertTrue(finishResult.contains("Scrim finished"));
+        assertTrue(finishResult.contains("Scrim finalizado exitosamente"));
         assertEquals("Finalizado", scrimLobby.getStatus());
         assertEquals("Finalizado", scrim.getStatus());
     }

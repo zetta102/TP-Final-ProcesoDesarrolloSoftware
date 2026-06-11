@@ -1,0 +1,48 @@
+@startuml
+actor "Jugador" as User
+control "AuthController" as API
+control "AuthService" as Auth
+control "MockOAuthProvider" as OAuth
+control "MockEmailService" as Email
+entity "Player" as Model
+database "PostgreSQL" as DB
+
+== Registro Estándar ==
+User -> API : POST /v1/api/auth/register (PlayerData)
+API -> Auth : register(playerData)
+
+Auth -> Auth : validateUniqueness(username, email)
+Auth -> Auth : passwordEncoder.encode(password)
+Auth -> Model : new Player(hash, region, status=PENDING)
+Auth -> Auth : generateVerificationToken(UUID)
+Model --> Auth : playerInstance
+Auth -> DB : playerRepository.save(playerInstance)
+DB --> Auth : savedPlayer
+
+Auth -> Email : sendVerificationEmail(email, username, token)
+Email --> Auth : [MOCK] logged verification link
+
+Auth --> API : 201 Created (Player)
+API --> User : Player JSON (status: PENDING)
+
+== Verificación de Email ==
+User -> API : POST /v1/api/auth/{username}/verify-email?token=xxx
+API -> Auth : verifyEmailWithToken(username, token)
+Auth -> DB : findByUsername(username)
+DB --> Auth : player
+Auth -> Auth : validate token match
+Auth -> Model : setEmailVerificationStatus(VERIFIED)
+Auth -> DB : save(player)
+Auth --> API : "Email verificado exitosamente."
+API --> User : 200 OK
+
+== Registro OAuth (Simulado) ==
+User -> API : POST /v1/api/auth/oauth/callback (provider, oauthToken)
+API -> Auth : registerViaOAuth(callbackData)
+Auth -> OAuth : validateAndFetchProfile(provider, token)
+OAuth --> Auth : Map(username, email, verified=true)
+Auth -> Model : new Player(OAuthData, status=VERIFIED)
+Auth -> DB : save(OAuthPlayer)
+Auth --> API : 201 Created (Player)
+API --> User : Player JSON (status: VERIFIED)
+@enduml

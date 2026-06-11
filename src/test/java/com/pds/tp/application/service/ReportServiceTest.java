@@ -9,6 +9,7 @@ import com.pds.tp.domain.entity.Scrim;
 import com.pds.tp.domain.moderation.AutoResolverNode;
 import com.pds.tp.domain.moderation.BotAnalyzerNode;
 import com.pds.tp.domain.moderation.HumanModNode;
+import com.pds.tp.domain.valueobject.ReportStatus;
 import com.pds.tp.infrastructure.repository.PlayerRepository;
 import com.pds.tp.infrastructure.repository.ReportRepository;
 import com.pds.tp.infrastructure.repository.ScrimRepository;
@@ -19,14 +20,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
-import static com.pds.tp.support.TestFixtures.lobby;
-import static com.pds.tp.support.TestFixtures.player;
-import static com.pds.tp.support.TestFixtures.setId;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static com.pds.tp.support.TestFixtures.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -92,6 +90,12 @@ class ReportServiceTest {
             setId(report, UUID.randomUUID());
             return report;
         });
+        when(reportRepository.findById(any(UUID.class))).thenAnswer(invocation -> {
+            // Simulate re-read after chain; status stays PENDIENTE because autoResolver is mocked (no-op).
+            Report report = new Report(scrim, reporting, reported, "AFK", "Descripción de contexto pendiente");
+            setId(report, invocation.getArgument(0));
+            return Optional.of(report);
+        });
 
         ReportApplication app = new ReportApplication("r1", UUID.randomUUID().toString(), "r2", "AFK");
 
@@ -100,8 +104,8 @@ class ReportServiceTest {
         assertNotNull(confirmation.reportId());
         assertEquals("r1", confirmation.reportingPlayerUsername());
         assertEquals("r2", confirmation.reportedPlayerUsername());
-        assertEquals("Created", confirmation.status());
-        verify(autoResolver).handle(any(Report.class));
+        assertEquals(ReportStatus.PENDIENTE, confirmation.status());
+        verify(autoResolver).handle(any(Report.class), any(ReportRepository.class));
     }
 
     private Scrim buildScrim(String status) {

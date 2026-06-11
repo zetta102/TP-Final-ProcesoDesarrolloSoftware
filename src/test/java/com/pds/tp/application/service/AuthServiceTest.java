@@ -1,8 +1,11 @@
 package com.pds.tp.application.service;
 
 import com.pds.tp.application.dto.PlayerData;
-import com.pds.tp.domain.entity.EmailVerificationStatus;
+import com.pds.tp.config.JwtService;
 import com.pds.tp.domain.entity.Player;
+import com.pds.tp.domain.valueobject.EmailVerificationStatus;
+import com.pds.tp.infrastructure.MockOAuthProvider;
+import com.pds.tp.infrastructure.notification.EmailService;
 import com.pds.tp.infrastructure.repository.PlayerRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,14 +16,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import static com.pds.tp.support.TestFixtures.player;
 import static com.pds.tp.support.TestFixtures.setField;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
@@ -30,6 +27,15 @@ class AuthServiceTest {
 
     @Mock
     private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private EmailService emailService;
+
+    @Mock
+    private MockOAuthProvider oAuthProvider;
+
+    @Mock
+    private JwtService jwtService;
 
     @InjectMocks
     private AuthService authService;
@@ -61,39 +67,43 @@ class AuthServiceTest {
     @Test
     void shouldAuthenticateByEmailWhenVerified() {
         Player verifiedPlayer = player("neo", "neo@test.com", "LAS");
-        verifiedPlayer.setEmailVerificationStatus(EmailVerificationStatus.VERIFICADO);
+        verifiedPlayer.setEmailVerificationStatus(EmailVerificationStatus.VERIFIED);
         setField(verifiedPlayer, "password", "hashed");
 
         when(playerRepository.findByEmail("neo@test.com")).thenReturn(verifiedPlayer);
         when(passwordEncoder.matches("plain", "hashed")).thenReturn(true);
+        when(jwtService.generateToken(verifiedPlayer)).thenReturn("mock-jwt-token");
 
-        assertTrue(authService.authenticate("neo@test.com", "plain"));
+        String token = authService.authenticate("neo@test.com", "plain");
+        assertNotNull(token);
+        assertEquals("mock-jwt-token", token);
     }
 
     @Test
     void shouldFailAuthenticationWhenEmailNotVerified() {
         Player pendingPlayer = player("neo", "neo@test.com", "LAS");
-        pendingPlayer.setEmailVerificationStatus(EmailVerificationStatus.PENDIENTE);
+        pendingPlayer.setEmailVerificationStatus(EmailVerificationStatus.PENDING);
         setField(pendingPlayer, "password", "hashed");
 
         when(playerRepository.findByUsername("neo")).thenReturn(pendingPlayer);
 
-        assertFalse(authService.authenticate("neo", "plain"));
+        String token = authService.authenticate("neo", "plain");
+        assertNull(token);
         verify(passwordEncoder, never()).matches(any(), any());
     }
 
     @Test
     void shouldVerifyEmail() {
         Player pendingPlayer = player("neo", "neo@test.com", "LAS");
-        pendingPlayer.setEmailVerificationStatus(EmailVerificationStatus.PENDIENTE);
+        pendingPlayer.setEmailVerificationStatus(EmailVerificationStatus.PENDING);
         setField(pendingPlayer, "password", "hashed");
 
         when(playerRepository.findByUsername("neo")).thenReturn(pendingPlayer);
 
         String result = authService.verifyEmail("neo");
 
-        assertEquals("Email verified successfully.", result);
-        assertEquals(EmailVerificationStatus.VERIFICADO, pendingPlayer.getEmailVerificationStatus());
+        assertEquals("Email verificado exitosamente.", result);
+        assertEquals(EmailVerificationStatus.VERIFIED, pendingPlayer.getEmailVerificationStatus());
         verify(playerRepository).save(pendingPlayer);
     }
 }

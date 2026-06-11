@@ -23,7 +23,7 @@ public class SwapPlayersCommand implements ScrimCommand {
         // For this prototype, we only validate membership and log the action.
         List<Player> lobbyPlayers = ctx.getLobby().getPlayers();
         if (lobbyPlayers.contains(player1) && lobbyPlayers.contains(player2)) {
-            log.info("COMMAND EXECUTE: Intercambiando posiciones de {} y {}", player1.getUsername(), player2.getUsername());
+            log.info("COMANDO EJECUTAR: Intercambiando posiciones de {} y {}", player1.getUsername(), player2.getUsername());
         } else {
             throw new IllegalStateException("Ambos jugadores deben pertenecer al lobby para hacer swap.");
         }
@@ -31,7 +31,7 @@ public class SwapPlayersCommand implements ScrimCommand {
 
     @Override
     public void undo(ScrimContext ctx) {
-        log.info("COMMAND UNDO: Revirtiendo posiciones de {} y {}", player1.getUsername(), player2.getUsername());
+        log.info("COMANDO DESHACER: Revirtiendo posiciones de {} y {}", player1.getUsername(), player2.getUsername());
     }
 }
 

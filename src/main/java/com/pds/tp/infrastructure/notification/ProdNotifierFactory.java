@@ -1,8 +1,8 @@
 package com.pds.tp.infrastructure.notification;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 /**
@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @Primary
-@ConditionalOnProperty(name = "app.environment", havingValue = "prod", matchIfMissing = true)
+@Profile("!dev")
 public class ProdNotifierFactory implements NotifierFactory {
 
     private final DiscordAdapter discordAdapter;

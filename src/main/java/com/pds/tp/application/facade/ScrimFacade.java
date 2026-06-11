@@ -60,27 +60,35 @@ public class ScrimFacade {
     }
 
     public String executeCommand(String id, String command, SwapPlayersRequest request) {
-        if (!"swap".equals(command)) {
-            throw new IllegalArgumentException("Unsupported command: " + command);
+        Lobby lobby = lobbyRepository.getReferenceById(UUID.fromString(id));
+        ScrimContext context = new ScrimContext(lobby, stateResolver.resolve(lobby.getStatus()), null);
+
+        if ("undo".equals(command)) {
+            commandExecutor.undoLastCommand(context);
+            lobbyRepository.save(lobby);
+            return "Último comando deshecho exitosamente.";
         }
 
-        Lobby lobby = lobbyRepository.getReferenceById(UUID.fromString(id));
+        if (!"swap".equals(command)) {
+            throw new IllegalArgumentException("Comando no soportado: " + command);
+        }
+
         Player p1 = playerRepository.findByUsername(request.firstPlayerUsername());
         Player p2 = playerRepository.findByUsername(request.secondPlayerUsername());
 
-        ScrimContext context = new ScrimContext(lobby, stateResolver.resolve(lobby.getStatus()), null);
         SwapPlayersCommand swapCommand = new SwapPlayersCommand(p1, p2);
         commandExecutor.executeCommand(swapCommand, context);
+        lobbyRepository.save(lobby);
 
-        return "Swap executed successfully.";
+        return "Intercambio ejecutado exitosamente.";
     }
 
     public Scrim startScrim(String id) {
         return scrimService.startScrim(new ScrimData(id));
     }
 
-    public String cancelScrim(String id) {
-        return scrimService.cancelLobbyById(UUID.fromString(id));
+    public String cancelScrim(String id, String reason) {
+        return scrimService.cancelLobbyById(UUID.fromString(id), reason);
     }
 
     public String finishScrim(String id) {

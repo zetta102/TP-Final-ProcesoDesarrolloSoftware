@@ -1,6 +1,7 @@
 package com.pds.tp.controller;
 
 import com.pds.tp.application.dto.LoginData;
+import com.pds.tp.application.dto.OAuthCallbackData;
 import com.pds.tp.application.dto.PlayerData;
 import com.pds.tp.application.service.AuthService;
 import com.pds.tp.domain.entity.Player;
@@ -10,9 +11,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 @RestController
-@RequestMapping( "/v1/api/auth")
+@RequestMapping("/v1/api/auth")
 public class AuthController {
-    private static final String MESSAGE_KEY = "message";
+    private static final String MESSAGE_KEY = "mensaje";
 
     private final AuthService authService;
 
@@ -27,18 +28,29 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<Map<String, String>> login(@RequestBody LoginData loginData) {
-        boolean authenticated = authService.authenticate(loginData.identifier(), loginData.password());
-        if (authenticated) {
-            // In a real implementation this would return a JWT; here we keep a placeholder format.
-            return ResponseEntity.ok(Map.of(MESSAGE_KEY, "Authentication succeeded", "mensaje", "Authentication succeeded", "token", "Bearer eyJhbG..."));
+        String token = authService.authenticate(loginData.identifier(), loginData.password());
+        if (token != null) {
+            return ResponseEntity.ok(Map.of(MESSAGE_KEY, "Autenticación exitosa", "token", "Bearer " + token));
         } else {
-            return ResponseEntity.status(401).body(Map.of("error", "Invalid credentials or unverified email"));
+            return ResponseEntity.status(401).body(Map.of(MESSAGE_KEY, "Credenciales inválidas, email no verificado o usuario baneado."));
         }
     }
 
+    @PostMapping("/oauth/callback")
+    public ResponseEntity<Player> oauthCallback(@RequestBody OAuthCallbackData callbackData) {
+        return ResponseEntity.status(201).body(authService.registerViaOAuth(callbackData));
+    }
+
     @PostMapping("/{username}/verify-email")
-    public ResponseEntity<Map<String, String>> verifyEmail(@PathVariable String username) {
-        String message = authService.verifyEmail(username);
-        return ResponseEntity.ok(Map.of(MESSAGE_KEY, message, "mensaje", message));
+    public ResponseEntity<Map<String, String>> verifyEmail(
+            @PathVariable String username,
+            @RequestParam(required = false) String token) {
+        String message;
+        if (token != null && !token.isBlank()) {
+            message = authService.verifyEmailWithToken(username, token);
+        } else {
+            message = authService.verifyEmail(username);
+        }
+        return ResponseEntity.ok(Map.of(MESSAGE_KEY, message));
     }
 }

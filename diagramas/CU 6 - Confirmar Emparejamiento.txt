@@ -1,0 +1,61 @@
+@startuml
+actor "Jugador" as Player
+actor "Organizador" as Org
+control "ScrimController" as API
+control "ScrimFacade" as Facade
+control "ScrimService" as Service
+control "CommandExecutor" as Invoker
+entity "ScrimContext" as Context
+entity "CreatedLobbyState" as State
+entity "Lobby" as LobbyModel
+database "PostgreSQL" as DB
+
+== Flujo de Swap de Roles (Command Pattern) ==
+Org -> API : POST /v1/api/scrims/{id}/acciones/swap (firstPlayer, secondPlayer)
+API -> Facade : executeCommand(id, "swap", request)
+Facade -> DB : lobbyRepository.getReferenceById(id)
+DB --> Facade : lobby
+Facade -> Facade : new ScrimContext(lobby, currentState, null)
+Facade -> Invoker : executeCommand(SwapPlayersCommand(p1, p2), context)
+Invoker -> Invoker : command.execute(context) → swap positions in players list
+Invoker -> Invoker : historyByLobby.push(command) [para undo]
+Facade -> DB : lobbyRepository.save(lobby)
+Facade --> API : "Intercambio ejecutado exitosamente."
+API --> Org : 200 OK
+
+== Flujo de Undo (Command Pattern) ==
+Org -> API : POST /v1/api/scrims/{id}/acciones/undo
+API -> Facade : executeCommand(id, "undo", null)
+Facade -> Invoker : undoLastCommand(context)
+Invoker -> Invoker : history.pop().undo(context)
+Facade -> DB : lobbyRepository.save(lobby)
+Facade --> API : "Último comando deshecho exitosamente."
+API --> Org : 200 OK
+
+== Flujo de Confirmación Estándar ==
+Player -> API : POST /v1/api/scrims/{id}/confirmaciones (username)
+API -> Facade : confirmParticipation(id, request)
+Facade -> Service : confirmParticipation(lobbyId, username)
+
+Service -> DB : lobbyRepository.getReferenceById(lobbyId)
+DB --> Service : lobby
+Service -> DB : playerRepository.findByUsername(username)
+DB --> Service : player
+
+Service -> Context : new ScrimContext(lobby, CreatedLobbyState, eventPublisher)
+Service -> Context : confirmar(player)
+Context -> State : confirmar(ctx, player)
+
+State -> State : validar: player está en lobby.players
+State -> LobbyModel : confirmedPlayerUsernames.add(username)
+
+alt confirmedPlayerUsernames.size() == maxPlayers
+    State -> Context : setState(new ConfirmedState())
+    note right: Transiciona a "Confirmado"\nSe publica ScrimStateChangedEvent
+end
+
+Service -> DB : lobbyRepository.save(lobby)
+Service --> Facade : "Jugador confirmado exitosamente."
+Facade --> API : mensaje
+API --> Player : 200 OK
+@enduml

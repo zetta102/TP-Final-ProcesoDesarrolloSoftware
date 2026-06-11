@@ -1,0 +1,52 @@
+@startuml
+actor "Organizador" as Org
+control "ScrimController" as API
+control "ScrimFacade" as Facade
+control "ScrimService" as Service
+control "ScrimBuilder" as Builder
+control "GameValidatorFactory" as ValidatorFactory
+control "GameValidator\n(Template Method)" as Validator
+entity "Lobby" as Model
+database "PostgreSQL" as DB
+control "ApplicationEventPublisher" as EventBus
+
+Org -> API : POST /v1/api/scrims (CreateScrimRequest)
+API -> Facade : createScrim(request)
+Facade -> Service : createScrim(request)
+
+Service -> Service : validate playersPerSide (1-5)
+Service -> Service : validate totalPlayers (2-10)
+Service -> DB : playerRepository.findByUsername(hostUserName)
+DB --> Service : host
+
+Service -> Builder : new ScrimBuilder()
+Builder -> Builder : host(host)
+Builder -> Builder : fecha(scheduledDate)
+Builder -> Builder : region(region)
+Builder -> Builder : formato(minPlayers, maxPlayers)
+Builder -> Builder : rango(minRank, maxRank)
+Builder -> Builder : juego(game, map)
+Builder -> Builder : latenciaMax(maxLatency)
+Builder -> Builder : duracion(duration)
+Builder -> Builder : modalidad(mode)
+
+Service -> ValidatorFactory : resolve(game)
+ValidatorFactory --> Service : gameValidator
+
+Builder -> Builder : validator(gameValidator)
+Service -> Builder : build()
+Builder -> Builder : validateInvariants(host, region, maxPlayers)
+Builder -> Validator : validate(lobby)
+Validator --> Builder : OK
+Builder --> Service : Lobby(status="Buscando", host in players)
+
+Service -> DB : lobbyRepository.save(lobby)
+DB --> Service : savedLobby
+
+Service -> EventBus : publishEvent(ScrimCreatedEvent(lobbyId, game, region))
+note right: NotificationSubscriber recibe el evento\ny notifica a jugadores con búsquedas guardadas
+
+Service --> Facade : savedLobby
+Facade --> API : savedLobby
+API --> Org : 201 Created (Lobby JSON)
+@enduml

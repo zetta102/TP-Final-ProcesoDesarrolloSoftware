@@ -4,6 +4,7 @@ import com.pds.tp.domain.entity.Lobby;
 import com.pds.tp.domain.entity.Player;
 import com.pds.tp.domain.event.ScrimStateChangedEvent;
 import com.pds.tp.infrastructure.repository.LobbyRepository;
+import com.pds.tp.infrastructure.repository.SavedSearchRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -15,11 +16,7 @@ import java.util.UUID;
 
 import static com.pds.tp.support.TestFixtures.lobby;
 import static com.pds.tp.support.TestFixtures.player;
-import static org.mockito.ArgumentMatchers.contains;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class NotificationSubscriberTest {
@@ -29,6 +26,12 @@ class NotificationSubscriberTest {
 
     @Mock
     private LobbyRepository lobbyRepository;
+
+    @Mock
+    private SavedSearchRepository savedSearchRepository;
+
+    @Mock
+    private KafkaEventPublisher kafkaEventPublisher;
 
     @Mock
     private Notifier emailNotifier;
@@ -56,7 +59,7 @@ class NotificationSubscriberTest {
         when(notifierFactory.createICalNotifier()).thenReturn(iCalNotifier);
         when(lobbyRepository.findById(lobbyId)).thenReturn(Optional.of(scrimLobby));
 
-        NotificationSubscriber subscriber = new NotificationSubscriber(notifierFactory, lobbyRepository);
+        NotificationSubscriber subscriber = new NotificationSubscriber(notifierFactory, lobbyRepository, savedSearchRepository, kafkaEventPublisher);
         subscriber.onDomainEvent(new ScrimStateChangedEvent(this, lobbyId, "Confirmado"));
 
         verify(emailNotifier, times(1)).sendNotification(eq("host@test.com"), contains("Confirmado"));
@@ -64,6 +67,7 @@ class NotificationSubscriberTest {
         verify(pushNotifier, times(1)).sendNotification(eq("host"), contains("Confirmado"));
         verify(pushNotifier, times(1)).sendNotification(eq("guest"), contains("Confirmado"));
         verify(discordNotifier, times(1)).sendNotification(eq("#scrim-updates"), contains("Confirmado"));
-        verify(iCalNotifier, times(1)).sendNotification(eq("calendar@scrims.local"), contains("Confirmado"));
+        verify(iCalNotifier, times(1)).sendNotification(eq("host@test.com"), contains("Confirmado"));
+        verify(iCalNotifier, times(1)).sendNotification(eq("guest@test.com"), contains("Confirmado"));
     }
 }

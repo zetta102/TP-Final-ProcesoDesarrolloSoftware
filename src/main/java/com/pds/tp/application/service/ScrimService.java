@@ -2,33 +2,25 @@ package com.pds.tp.application.service;
 
 import com.pds.tp.application.dto.*;
 import com.pds.tp.domain.builder.ScrimBuilder;
-import com.pds.tp.domain.entity.Lobby;
-import com.pds.tp.domain.entity.Player;
-import com.pds.tp.domain.entity.Scrim;
-import com.pds.tp.domain.entity.ScrimStatistics;
-import com.pds.tp.domain.entity.Waitlist;
-import com.pds.tp.domain.entity.WaitlistStatus;
+import com.pds.tp.domain.entity.*;
 import com.pds.tp.domain.event.ScrimCreatedEvent;
 import com.pds.tp.domain.shared.RankScale;
 import com.pds.tp.domain.state.ScrimContext;
 import com.pds.tp.domain.state.ScrimStateResolver;
 import com.pds.tp.domain.strategy.MatchmakingStrategy;
-import com.pds.tp.infrastructure.repository.LobbyRepository;
-import com.pds.tp.infrastructure.repository.PlayerRepository;
-import com.pds.tp.infrastructure.repository.ScrimRepository;
-import com.pds.tp.infrastructure.repository.ScrimStatisticsRepository;
-import com.pds.tp.infrastructure.repository.WaitlistRepository;
+import com.pds.tp.domain.validation.GameValidatorFactory;
+import com.pds.tp.domain.valueobject.WaitlistStatus;
+import com.pds.tp.infrastructure.repository.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -42,47 +34,41 @@ public class ScrimService {
     private final LobbyRepository lobbyRepository;
     private final PlayerRepository playerRepository;
     private final ScrimStatisticsRepository scrimStatisticsRepository;
+    private final PlayerScrimStatsRepository playerScrimStatsRepository;
     private final WaitlistRepository waitlistRepository;
 
     private final ApplicationEventPublisher eventPublisher;
     private final MatchmakingStrategy matchmakingStrategy;
     private final ScrimStateResolver stateResolver;
+    private final GameValidatorFactory gameValidatorFactory;
+    private final MMRRecalculator mmrRecalculator;
 
     public ScrimService(ScrimRepository scrimRepository, LobbyRepository lobbyRepository,
                         PlayerRepository playerRepository, ScrimStatisticsRepository scrimStatisticsRepository,
+                        PlayerScrimStatsRepository playerScrimStatsRepository,
                         WaitlistRepository waitlistRepository,
                         ApplicationEventPublisher eventPublisher,
                         MatchmakingStrategy matchmakingStrategy,
-                        ScrimStateResolver stateResolver) {
+                        ScrimStateResolver stateResolver,
+                        GameValidatorFactory gameValidatorFactory,
+                        MMRRecalculator mmrRecalculator) {
         this.scrimRepository = scrimRepository;
         this.lobbyRepository = lobbyRepository;
         this.playerRepository = playerRepository;
         this.scrimStatisticsRepository = scrimStatisticsRepository;
+        this.playerScrimStatsRepository = playerScrimStatsRepository;
         this.waitlistRepository = waitlistRepository;
         this.eventPublisher = eventPublisher;
         this.matchmakingStrategy = matchmakingStrategy;
         this.stateResolver = stateResolver;
+        this.gameValidatorFactory = gameValidatorFactory;
+        this.mmrRecalculator = mmrRecalculator;
     }
 
-    public Lobby createLobby(LobbyData lobbyData) {
-        Player player = playerRepository.findByUsername(lobbyData.hostUserName());
-
-        Lobby lobby = new ScrimBuilder()
-                .host(player)
-                .formato(lobbyData.minPlayers(), lobbyData.maxPlayers())
-                .rango(lobbyData.minRank(), lobbyData.maxRank())
-                .juego(lobbyData.gameMode(), lobbyData.map())
-                .latenciaMax(lobbyData.maxPing())
-                .build();
-
-        Lobby savedLobby = lobbyRepository.save(lobby);
-        eventPublisher.publishEvent(new ScrimCreatedEvent(this, savedLobby.getId(), savedLobby.getGameMode(), savedLobby.getRegion()));
-        return savedLobby;
-    }
 
     public Lobby createScrim(CreateScrimRequest request) {
         if (request.playersPerSide() <= 0 || request.playersPerSide() > 5) {
-            throw new IllegalArgumentException("Players per side must be between 1 and 5.");
+            throw new IllegalArgumentException("Los jugadores por lado deben estar entre 1 y 5.");
         }
 
         int minPlayers = request.playersPerSide();
@@ -91,7 +77,7 @@ public class ScrimService {
                 : request.playersPerSide() * 2;
 
         if (maxPlayers < 2 || maxPlayers > 10) {
-            throw new IllegalArgumentException("Total player count must be between 2 and 10.");
+            throw new IllegalArgumentException("El total de jugadores debe estar entre 2 y 10.");
         }
 
         Player host = playerRepository.findByUsername(request.hostUserName());
@@ -105,9 +91,14 @@ public class ScrimService {
                 .rango(request.minRank(), request.maxRank())
                 .juego(request.game() != null ? request.game() : request.format(), request.map())
                 .latenciaMax(request.maxLatency())
+                .duracion(request.duration())
+                .modalidad(request.mode())
+                .validator(gameValidatorFactory.resolve(request.game()))
                 .build();
 
-        return lobbyRepository.save(lobby);
+        Lobby savedLobby = lobbyRepository.save(lobby);
+        eventPublisher.publishEvent(new ScrimCreatedEvent(this, savedLobby.getId(), savedLobby.getGameMode(), savedLobby.getRegion()));
+        return savedLobby;
     }
 
     public LobbyConfirmation applyToLobby(LobbyApplication lobbyApplication) {
@@ -119,8 +110,8 @@ public class ScrimService {
             return new LobbyConfirmation(
                     player.getId().toString(),
                     lobby.getId().toString(),
-                    "Waitlisted",
-                    "Lobby is full. Player added to waitlist."
+                    "En lista de espera",
+                    "El lobby está lleno. Jugador agregado a la lista de espera."
             );
         }
 
@@ -128,10 +119,10 @@ public class ScrimService {
         try {
             context.postular(player, lobbyApplication.desiredRole());
             lobbyRepository.save(lobby);
-            return new LobbyConfirmation(player.getId().toString(), lobby.getId().toString(), "Confirmed", "Joined lobby successfully.");
+            return new LobbyConfirmation(player.getId().toString(), lobby.getId().toString(), "Aceptado", "Unido al lobby exitosamente.");
         } catch (IllegalStateException e) {
-            log.info("Application rejected: {}", e.getMessage());
-            return new LobbyConfirmation(lobbyApplication.username(), lobbyApplication.lobbyId(), "Rejected", e.getMessage());
+            log.info("Postulación rechazada: {}", e.getMessage());
+            return new LobbyConfirmation(lobbyApplication.username(), lobbyApplication.lobbyId(), "Rechazado", e.getMessage());
         }
     }
 
@@ -143,16 +134,12 @@ public class ScrimService {
         try {
             context.confirmar(player);
             lobbyRepository.save(lobby);
-            return "Player confirmed successfully.";
+            return "Jugador confirmado exitosamente.";
         } catch (IllegalStateException e) {
-            return "Confirmation error: " + e.getMessage();
+            return "Error de confirmación: " + e.getMessage();
         }
     }
 
-    @Deprecated
-    public String confirmarParticipacion(UUID lobbyId, String username) {
-        return confirmParticipation(lobbyId, username);
-    }
 
     public Scrim startScrim(ScrimData scrimData) {
         Lobby lobby = lobbyRepository.getReferenceById(UUID.fromString(scrimData.lobbyId()));
@@ -192,7 +179,7 @@ public class ScrimService {
                 createAndPersistScrim(lobby);
                 started++;
             } catch (IllegalStateException ex) {
-                log.warn("Scheduler could not start lobby {}: {}", lobby.getId(), ex.getMessage());
+                log.warn("El scheduler no pudo iniciar el lobby {}: {}", lobby.getId(), ex.getMessage());
             }
         }
 
@@ -217,23 +204,51 @@ public class ScrimService {
                 finishScrimById(scrim.getId());
                 finalized++;
             } catch (IllegalStateException ex) {
-                log.warn("Scheduler could not finish scrim {}: {}", scrim.getId(), ex.getMessage());
+                log.warn("El scheduler no pudo finalizar el scrim {}: {}", scrim.getId(), ex.getMessage());
             }
         }
 
         return finalized;
     }
 
-    public String cancelLobbyById(UUID lobbyId) {
+    public String cancelLobbyById(UUID lobbyId, String reason) {
         Lobby lobby = lobbyRepository.getReferenceById(lobbyId);
         ScrimContext context = new ScrimContext(lobby, stateResolver.resolve(lobby.getStatus()), eventPublisher);
 
         try {
+            // Apply late-cancellation penalty if lobby is Confirmado and close to scheduled time
+            applyLateCancellationPenalty(lobby);
+
+            lobby.setCancelReason(reason);
             context.cancelar();
             lobbyRepository.save(lobby);
-            return "Lobby " + lobbyId + " canceled.";
+            return "Lobby " + lobbyId + " cancelado." + (reason != null ? " Motivo: " + reason : "");
         } catch (IllegalStateException e) {
             return e.getMessage();
+        }
+    }
+
+    private void applyLateCancellationPenalty(Lobby lobby) {
+        if (!"Confirmado".equals(lobby.getStatus())) {
+            return;
+        }
+        if (lobby.getScheduledTime() == null || lobby.getHost() == null) {
+            return;
+        }
+
+        long hoursUntilStart = ChronoUnit.HOURS.between(LocalDateTime.now(), lobby.getScheduledTime());
+        if (hoursUntilStart < 1) {
+            Player host = lobby.getHost();
+            host.setStrikes(host.getStrikes() + 1);
+            log.warn("Penalización aplicada al organizador {} por cancelación tardía. Strikes: {}",
+                    host.getUsername(), host.getStrikes());
+
+            if (host.getStrikes() >= 3) {
+                host.setBanned(true);
+                log.warn("Usuario {} baneado por acumulación de strikes ({})",
+                        host.getUsername(), host.getStrikes());
+            }
+            playerRepository.save(host);
         }
     }
 
@@ -254,7 +269,7 @@ public class ScrimService {
             stats.setStatus(STATUS_FINALIZADO);
             scrimStatisticsRepository.save(stats);
 
-            return "Scrim finished successfully.";
+            return "Scrim finalizado exitosamente.";
         } catch (IllegalStateException e) {
             return e.getMessage();
         }
@@ -272,8 +287,7 @@ public class ScrimService {
                 .toList();
     }
 
-    @Scheduled(fixedRate = 60, timeUnit = TimeUnit.SECONDS)
-    public void autoMatchmakingCron() {
+    public void runMatchmakingPass() {
         List<Lobby> lobbies = lobbyRepository.findAllByStatusEquals(STATUS_BUSCANDO);
         // Use the full player pool as matchmaking candidates for this scheduled prototype flow.
         List<Player> availablePlayers = playerRepository.findAll();
@@ -296,7 +310,7 @@ public class ScrimService {
     }
 
     private void enqueueWaitlistIfNeeded(Lobby lobby, Player player, String desiredRole) {
-        waitlistRepository.findFirstByLobbyAndPlayerAndStatus(lobby, player, WaitlistStatus.PENDIENTE)
+        waitlistRepository.findFirstByLobbyAndPlayerAndStatus(lobby, player, WaitlistStatus.PENDING)
                 .orElseGet(() -> waitlistRepository.save(new Waitlist(lobby, player, desiredRole)));
     }
 
@@ -306,7 +320,7 @@ public class ScrimService {
             return;
         }
 
-        List<Waitlist> pendingEntries = waitlistRepository.findAllByLobbyAndStatusOrderByCreatedAtAsc(lobby, WaitlistStatus.PENDIENTE);
+        List<Waitlist> pendingEntries = waitlistRepository.findAllByLobbyAndStatusOrderByCreatedAtAsc(lobby, WaitlistStatus.PENDING);
         if (pendingEntries.isEmpty()) {
             return;
         }
@@ -319,7 +333,7 @@ public class ScrimService {
 
             try {
                 context.postular(entry.getPlayer(), entry.getDesiredRole() != null ? entry.getDesiredRole() : "FLEX");
-                entry.setStatus(WaitlistStatus.PROMOVIDO);
+                entry.setStatus(WaitlistStatus.PROMOTED);
                 entry.setPromotedAt(LocalDateTime.now());
                 waitlistRepository.save(entry);
                 availableSlots--;
@@ -344,7 +358,29 @@ public class ScrimService {
             statistics.setStatus(request.status());
         }
 
-        return scrimStatisticsRepository.save(statistics);
+        scrimStatisticsRepository.save(statistics);
+
+        // Persist per-player stats and recalculate MMR
+        List<PlayerScrimStats> playerStatsList = new ArrayList<>();
+        if (request.playerStats() != null && !request.playerStats().isEmpty()) {
+            for (CreateStatisticsRequest.PlayerStatsEntry entry : request.playerStats()) {
+                Player player = playerRepository.findByUsername(entry.username());
+                if (player != null) {
+                    PlayerScrimStats pss = new PlayerScrimStats(
+                            statistics, player, entry.kills(), entry.deaths(), entry.assists(), entry.mvp());
+                    playerScrimStatsRepository.save(pss);
+                    playerStatsList.add(pss);
+                }
+            }
+
+            // Trigger MMR recalculation if winning team is known
+            if (request.winningTeam() != null && !request.winningTeam().isBlank()) {
+                mmrRecalculator.recalculate(playerStatsList, request.winningTeam(),
+                        statistics.getRedTeam(), statistics.getBlueTeam());
+            }
+        }
+
+        return statistics;
     }
 
     private int compareRanks(String a, String b) {
@@ -356,7 +392,7 @@ public class ScrimService {
             LocalDateTime requested = LocalDateTime.parse(fecha);
             return lobby.getScheduledTime() != null && lobby.getScheduledTime().toLocalDate().isEqual(requested.toLocalDate());
         } catch (DateTimeParseException ex) {
-            throw new IllegalArgumentException("Invalid date format in filter. Use ISO-8601, for example 2026-06-18T21:00:00.");
+            throw new IllegalArgumentException("Formato de fecha inválido en el filtro. Use ISO-8601, por ejemplo 2026-06-18T21:00:00.");
         }
     }
 
@@ -368,7 +404,7 @@ public class ScrimService {
         try {
             return LocalDateTime.parse(rawDate);
         } catch (DateTimeParseException ex) {
-            throw new IllegalArgumentException("Invalid date format. Use ISO-8601, for example 2026-06-18T21:00:00.");
+            throw new IllegalArgumentException("Formato de fecha inválido. Use ISO-8601, por ejemplo 2026-06-18T21:00:00.");
         }
     }
 }

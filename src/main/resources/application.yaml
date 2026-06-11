@@ -28,6 +28,9 @@ spring:
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
 
 app:
+  jwt:
+    secret: eScrims-default-secret-key-for-dev-only-change-in-prod-at-least-256-bits
+    expiration-hours: 24
   kafka:
     topics:
       scrim-events: ${KAFKA_TOPIC_SCRIM_EVENTS:topic1}

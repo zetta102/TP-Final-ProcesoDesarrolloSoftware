@@ -14,7 +14,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/v1/api/scrims")
 public class ScrimController {
-    private static final String MESSAGE_KEY = "message";
+    private static final String MESSAGE_KEY = "mensaje";
 
     private final ScrimFacade scrimFacade;
 
@@ -57,7 +57,7 @@ public class ScrimController {
         try {
             return ResponseEntity.ok(messageBody(scrimFacade.executeCommand(id, command, payload)));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of(MESSAGE_KEY, e.getMessage()));
         }
     }
 
@@ -67,8 +67,11 @@ public class ScrimController {
     }
 
     @PostMapping("/{id}/cancelar")
-    public ResponseEntity<Map<String, String>> cancel(@PathVariable String id) {
-        return ResponseEntity.ok(messageBody(scrimFacade.cancelScrim(id)));
+    public ResponseEntity<Map<String, String>> cancel(
+            @PathVariable String id,
+            @RequestBody(required = false) CancelScrimRequest request) {
+        String reason = (request != null) ? request.reason() : null;
+        return ResponseEntity.ok(messageBody(scrimFacade.cancelScrim(id, reason)));
     }
 
     @PostMapping("/{id}/finalizar")
@@ -91,6 +94,6 @@ public class ScrimController {
     }
 
     private Map<String, String> messageBody(String message) {
-        return Map.of(MESSAGE_KEY, message, "mensaje", message);
+        return Map.of(MESSAGE_KEY, message);
     }
 }

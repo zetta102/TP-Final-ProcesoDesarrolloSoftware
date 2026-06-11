@@ -1,0 +1,57 @@
+@startuml
+actor "Organizador" as Org
+control "ScrimController" as API
+control "ScrimFacade" as Facade
+control "ScrimService" as Service
+entity "ScrimContext" as Context
+entity "CurrentState\n(Buscando/LobbyArmado/Confirmado)" as State
+entity "Lobby" as LobbyModel
+entity "Player" as HostModel
+database "PostgreSQL" as DB
+control "ApplicationEventPublisher" as EventBus
+
+Org -> API : POST /v1/api/scrims/{id}/cancelar (CancelScrimRequest: reason)
+API -> Facade : cancelScrim(id, reason)
+Facade -> Service : cancelLobbyById(lobbyId, reason)
+
+Service -> DB : lobbyRepository.getReferenceById(lobbyId)
+DB --> Service : lobby
+
+== Evaluación de Penalidad por Cancelación Tardía ==
+Service -> Service : applyLateCancellationPenalty(lobby)
+
+alt lobby.status == "Confirmado" AND horasHastaInicio < 1
+    Service -> HostModel : host.setStrikes(strikes + 1)
+    note right: Penalización al organizador\npor cancelación tardía
+
+    alt host.strikes >= 3
+        Service -> HostModel : host.setBanned(true)
+        note right: Usuario baneado por\nacumulación de strikes
+    end
+
+    Service -> DB : playerRepository.save(host)
+else No aplica penalidad
+    note right: Cancelación fuera de ventana\nde penalidad (> 1 hora antes)
+end
+
+== Transición de Estado ==
+Service -> LobbyModel : setCancelReason(reason)
+Service -> Context : new ScrimContext(lobby, currentState, eventPublisher)
+Service -> Context : cancelar()
+Context -> State : cancelar(ctx)
+State -> Context : setState(new CanceledState())
+note right: Lobby status → "Cancelado"\nSe publica ScrimStateChangedEvent
+
+Service -> DB : lobbyRepository.save(lobby)
+Service --> Facade : "Lobby {id} cancelado. Motivo: {reason}"
+Facade --> API : mensaje
+API --> Org : 200 OK
+
+note bottom
+    Cancelar es válido desde los estados:
+    - Buscando
+    - LobbyArmado
+    - Confirmado
+    NO es válido desde EnJuego (debe finalizarse)
+end note
+@enduml

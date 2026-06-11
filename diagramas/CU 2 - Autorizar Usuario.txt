@@ -1,0 +1,42 @@
+@startuml
+actor "Usuario" as User
+control "AuthController" as API
+control "AuthService" as Auth
+control "JwtService" as Jwt
+control "RateLimitingFilter" as RateLimit
+database "PostgreSQL" as DB
+
+User -> RateLimit : POST /v1/api/auth/login (identifier, password)
+RateLimit -> RateLimit : checkRateLimit(clientKey)
+
+alt Rate limit excedido
+    RateLimit --> User : 429 Too Many Requests
+else Dentro del límite
+    RateLimit -> API : forward request
+end
+
+API -> Auth : authenticate(identifier, password)
+Auth -> Auth : resolvePlayer(identifier) [por email o username]
+Auth -> DB : findByEmail() o findByUsername()
+DB --> Auth : player
+
+alt player == null
+    Auth --> API : null (no encontrado)
+    API --> User : 401 Unauthorized
+else player.isBanned()
+    Auth --> API : null (usuario baneado)
+    API --> User : 401 "Credenciales inválidas, email no verificado o usuario baneado."
+else !emailVerificationStatus.isVerified()
+    Auth --> API : null (email no verificado)
+    API --> User : 401 Unauthorized
+else passwordEncoder.matches(pass, hash)
+    Auth -> Jwt : generateToken(player)
+    Jwt -> Jwt : build JWT (sub=username, role, userId, exp=24h)
+    Jwt --> Auth : jwtToken
+    Auth --> API : token
+    API --> User : 200 OK {"token": "Bearer <jwt>", "mensaje": "Autenticación exitosa"}
+else Hash mismatch
+    Auth --> API : null
+    API --> User : 401 Unauthorized
+end
+@enduml

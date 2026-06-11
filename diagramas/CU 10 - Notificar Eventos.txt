@@ -1,0 +1,73 @@
+@startuml
+control "ApplicationEventPublisher" as Publisher
+control "NotificationSubscriber\n(@EventListener)" as Sub
+control "NotifierFactory\n(ProdNotifierFactory)" as Factory
+boundary "DiscordAdapter" as Discord
+boundary "SendGridAdapter\n(Email)" as Email
+boundary "PushNotifier\n(Firebase Mock)" as Push
+boundary "ICalAdapter" as ICal
+control "KafkaEventPublisher" as Kafka
+entity "SavedSearch" as Search
+database "PostgreSQL" as DB
+
+== Evento: Cambio de Estado del Lobby ==
+Publisher -> Sub : onDomainEvent(ScrimStateChangedEvent)
+
+Sub -> DB : lobbyRepository.findById(lobbyId)
+DB --> Sub : Optional<Lobby>
+
+Sub -> Sub : resolvePlayerProfiles(lobbyId)
+note right: Extrae email y enabledNotificationChannels\nde cada Player en el lobby
+
+Sub -> Factory : createDiscordNotifier()
+Factory --> Sub : DiscordAdapter
+Sub -> Discord : sendWithRetry("#scrim-updates", message)
+Discord -> Discord : HTTP POST webhook (simulado, log)
+
+loop Para cada jugador del lobby
+    alt PUSH habilitado en enabledNotificationChannels
+        Sub -> Factory : createPushNotifier()
+        Sub -> Push : sendWithRetry(username, message)
+    end
+    alt EMAIL habilitado
+        Sub -> Factory : createEmailNotifier()
+        Sub -> Email : sendWithRetry(email, message)
+    end
+    alt ICAL habilitado
+        Sub -> Factory : createICalNotifier()
+        Sub -> ICal : sendWithRetry(email, message)
+        ICal -> ICal : genera RFC 5545 VCALENDAR (simulado)
+    end
+end
+
+Sub -> Kafka : publish(lobbyId, message)
+note right: Publicación a Kafka para\nconsumidores downstream asíncronos
+
+== Evento: Scrim Creado (Alertas de Búsquedas Guardadas) ==
+Publisher -> Sub : onScrimCreated(ScrimCreatedEvent)
+
+Sub -> Discord : sendWithRetry("#scrim-updates", message)
+
+Sub -> DB : lobbyRepository.findById(lobbyId)
+DB --> Sub : lobby
+Sub -> DB : savedSearchRepository.findAll()
+DB --> Sub : List<SavedSearch>
+
+loop Para cada SavedSearch
+    Sub -> Search : matchesLobby(lobby)
+    alt Coincide con preferencias del jugador
+        Sub -> Sub : notificar al jugador por sus canales habilitados
+        Sub -> Email : sendWithRetry(player.email, alertMessage)
+        Sub -> Push : sendWithRetry(player.username, alertMessage)
+    end
+end
+
+Sub -> Kafka : publish(lobbyId, message)
+
+== Reintentos con Backoff Exponencial ==
+note over Sub
+    sendWithRetry(): max 3 intentos
+    Backoff: 200ms → 400ms → 800ms
+    Si falla todos los intentos: log.error (no se pierde el evento)
+end note
+@enduml
