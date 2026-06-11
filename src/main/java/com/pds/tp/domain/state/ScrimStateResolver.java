@@ -20,7 +20,6 @@ public class ScrimStateResolver {
         }
 
         return switch (status) {
-            case STATUS_BUSCANDO -> new SearchingState();
             case STATUS_LOBBY_ARMADO -> new CreatedLobbyState();
             case STATUS_CONFIRMADO -> new ConfirmedState();
             case STATUS_EN_JUEGO -> new PlayingState();

@@ -10,6 +10,7 @@ import java.util.Random;
 
 import static com.pds.tp.support.TestFixtures.lobby;
 import static com.pds.tp.support.TestFixtures.player;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -28,7 +29,7 @@ class ByMMRStrategyBenchmarkTest {
         long elapsedMillis = (System.nanoTime() - start) / 1_000_000;
 
         assertTrue(elapsedMillis < 2000, "Emparejamiento tardo " + elapsedMillis + "ms, esperado < 2000ms");
-        assertTrue(!selected.isEmpty(), "Debe seleccionar al menos un candidato");
+        assertFalse(selected.isEmpty(), "Debe seleccionar al menos un candidato");
     }
 
     private Lobby createTestLobby() {
