@@ -7,12 +7,12 @@ import com.pds.tp.domain.entity.Player;
 import com.pds.tp.domain.entity.Scrim;
 import com.pds.tp.domain.entity.ScrimStatistics;
 import com.pds.tp.domain.entity.Waitlist;
-import com.pds.tp.domain.entity.WaitlistStatus;
 import com.pds.tp.domain.event.ScrimCreatedEvent;
 import com.pds.tp.domain.shared.RankScale;
 import com.pds.tp.domain.state.ScrimContext;
 import com.pds.tp.domain.state.ScrimStateResolver;
 import com.pds.tp.domain.strategy.MatchmakingStrategy;
+import com.pds.tp.domain.valueobject.WaitlistStatus;
 import com.pds.tp.infrastructure.repository.LobbyRepository;
 import com.pds.tp.infrastructure.repository.PlayerRepository;
 import com.pds.tp.infrastructure.repository.ScrimRepository;
@@ -296,7 +296,7 @@ public class ScrimService {
     }
 
     private void enqueueWaitlistIfNeeded(Lobby lobby, Player player, String desiredRole) {
-        waitlistRepository.findFirstByLobbyAndPlayerAndStatus(lobby, player, WaitlistStatus.PENDIENTE)
+        waitlistRepository.findFirstByLobbyAndPlayerAndStatus(lobby, player, WaitlistStatus.PENDING)
                 .orElseGet(() -> waitlistRepository.save(new Waitlist(lobby, player, desiredRole)));
     }
 
@@ -306,7 +306,7 @@ public class ScrimService {
             return;
         }
 
-        List<Waitlist> pendingEntries = waitlistRepository.findAllByLobbyAndStatusOrderByCreatedAtAsc(lobby, WaitlistStatus.PENDIENTE);
+        List<Waitlist> pendingEntries = waitlistRepository.findAllByLobbyAndStatusOrderByCreatedAtAsc(lobby, WaitlistStatus.PENDING);
         if (pendingEntries.isEmpty()) {
             return;
         }
@@ -319,7 +319,7 @@ public class ScrimService {
 
             try {
                 context.postular(entry.getPlayer(), entry.getDesiredRole() != null ? entry.getDesiredRole() : "FLEX");
-                entry.setStatus(WaitlistStatus.PROMOVIDO);
+                entry.setStatus(WaitlistStatus.PROMOTED);
                 entry.setPromotedAt(LocalDateTime.now());
                 waitlistRepository.save(entry);
                 availableSlots--;

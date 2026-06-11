@@ -1,5 +1,7 @@
 package com.pds.tp.domain.entity;
 
+import com.pds.tp.domain.valueobject.ScrimApplicationStatus;
+import com.pds.tp.infrastructure.persistence.converter.ScrimApplicationStatusConverter;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -26,7 +28,7 @@ public class ScrimApplication {
     private String desiredRole;
 
     @Setter
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = ScrimApplicationStatusConverter.class)
     private ScrimApplicationStatus status = ScrimApplicationStatus.PENDING;
 }
 

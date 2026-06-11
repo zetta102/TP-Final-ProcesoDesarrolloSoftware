@@ -1,6 +1,10 @@
 package com.pds.tp.domain.entity;
 
+import com.pds.tp.domain.valueobject.EmailVerificationStatus;
+import com.pds.tp.domain.valueobject.UserRole;
 import jakarta.persistence.*;
+import com.pds.tp.infrastructure.persistence.converter.EmailVerificationStatusConverter;
+import com.pds.tp.infrastructure.persistence.converter.UserRoleConverter;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -24,10 +28,10 @@ public class Player {
     private String email;
     private String password;
     @Setter
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = EmailVerificationStatusConverter.class)
     private EmailVerificationStatus emailVerificationStatus;
     @Setter
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = UserRoleConverter.class)
     private UserRole role;
     private String preferredRole;
     private String region;
@@ -47,7 +51,7 @@ public class Player {
         this.username = username;
         this.email = email;
         this.password = password;
-        this.emailVerificationStatus = EmailVerificationStatus.PENDIENTE;
+        this.emailVerificationStatus = EmailVerificationStatus.PENDING;
         this.role = UserRole.USER;
         this.preferredRole = preferredRole;
         this.region = region;

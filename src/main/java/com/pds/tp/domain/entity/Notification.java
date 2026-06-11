@@ -1,5 +1,9 @@
 package com.pds.tp.domain.entity;
 
+import com.pds.tp.domain.valueobject.NotificationChannel;
+import com.pds.tp.domain.valueobject.NotificationStatus;
+import com.pds.tp.infrastructure.persistence.converter.NotificationChannelConverter;
+import com.pds.tp.infrastructure.persistence.converter.NotificationStatusConverter;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -20,11 +24,11 @@ public class Notification {
     private String type;
     private String payload;
 
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = NotificationChannelConverter.class)
     private NotificationChannel channel;
 
     @Setter
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = NotificationStatusConverter.class)
     private NotificationStatus status = NotificationStatus.PENDING;
 }
 

@@ -1,8 +1,8 @@
 package com.pds.tp.application.service;
 
 import com.pds.tp.application.dto.PlayerData;
-import com.pds.tp.domain.entity.EmailVerificationStatus;
 import com.pds.tp.domain.entity.Player;
+import com.pds.tp.domain.valueobject.EmailVerificationStatus;
 import com.pds.tp.infrastructure.repository.PlayerRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -61,7 +61,7 @@ class AuthServiceTest {
     @Test
     void shouldAuthenticateByEmailWhenVerified() {
         Player verifiedPlayer = player("neo", "neo@test.com", "LAS");
-        verifiedPlayer.setEmailVerificationStatus(EmailVerificationStatus.VERIFICADO);
+        verifiedPlayer.setEmailVerificationStatus(EmailVerificationStatus.VERIFIED);
         setField(verifiedPlayer, "password", "hashed");
 
         when(playerRepository.findByEmail("neo@test.com")).thenReturn(verifiedPlayer);
@@ -73,7 +73,7 @@ class AuthServiceTest {
     @Test
     void shouldFailAuthenticationWhenEmailNotVerified() {
         Player pendingPlayer = player("neo", "neo@test.com", "LAS");
-        pendingPlayer.setEmailVerificationStatus(EmailVerificationStatus.PENDIENTE);
+        pendingPlayer.setEmailVerificationStatus(EmailVerificationStatus.PENDING);
         setField(pendingPlayer, "password", "hashed");
 
         when(playerRepository.findByUsername("neo")).thenReturn(pendingPlayer);
@@ -85,7 +85,7 @@ class AuthServiceTest {
     @Test
     void shouldVerifyEmail() {
         Player pendingPlayer = player("neo", "neo@test.com", "LAS");
-        pendingPlayer.setEmailVerificationStatus(EmailVerificationStatus.PENDIENTE);
+        pendingPlayer.setEmailVerificationStatus(EmailVerificationStatus.PENDING);
         setField(pendingPlayer, "password", "hashed");
 
         when(playerRepository.findByUsername("neo")).thenReturn(pendingPlayer);
@@ -93,7 +93,7 @@ class AuthServiceTest {
         String result = authService.verifyEmail("neo");
 
         assertEquals("Email verified successfully.", result);
-        assertEquals(EmailVerificationStatus.VERIFICADO, pendingPlayer.getEmailVerificationStatus());
+        assertEquals(EmailVerificationStatus.VERIFIED, pendingPlayer.getEmailVerificationStatus());
         verify(playerRepository).save(pendingPlayer);
     }
 }

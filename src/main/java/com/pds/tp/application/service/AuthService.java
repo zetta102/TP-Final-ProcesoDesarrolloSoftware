@@ -1,8 +1,8 @@
 package com.pds.tp.application.service;
 
 import com.pds.tp.application.dto.PlayerData;
-import com.pds.tp.domain.entity.EmailVerificationStatus;
 import com.pds.tp.domain.entity.Player;
+import com.pds.tp.domain.valueobject.EmailVerificationStatus;
 import com.pds.tp.infrastructure.repository.PlayerRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -46,7 +46,7 @@ public class AuthService {
         if (player == null) {
             return false;
         }
-        if (player.getEmailVerificationStatus() != EmailVerificationStatus.VERIFICADO) {
+        if (!player.getEmailVerificationStatus().isVerified()) {
             return false;
         }
         return passwordEncoder.matches(password, player.getPassword());
@@ -67,11 +67,11 @@ public class AuthService {
         if (player == null) {
             return "User not found.";
         }
-        if (player.getEmailVerificationStatus() == EmailVerificationStatus.VERIFICADO) {
+        if (player.getEmailVerificationStatus().isVerified()) {
             return "Email was already verified.";
         }
 
-        player.setEmailVerificationStatus(EmailVerificationStatus.VERIFICADO);
+        player.setEmailVerificationStatus(EmailVerificationStatus.VERIFIED);
         playerRepository.save(player);
         return "Email verified successfully.";
     }

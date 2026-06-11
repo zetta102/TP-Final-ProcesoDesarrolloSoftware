@@ -3,7 +3,7 @@ package com.pds.tp.infrastructure.repository;
 import com.pds.tp.domain.entity.Lobby;
 import com.pds.tp.domain.entity.Player;
 import com.pds.tp.domain.entity.Waitlist;
-import com.pds.tp.domain.entity.WaitlistStatus;
+import com.pds.tp.domain.valueobject.WaitlistStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
