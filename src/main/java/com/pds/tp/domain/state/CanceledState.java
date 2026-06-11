@@ -3,12 +3,12 @@ package com.pds.tp.domain.state;
 public class CanceledState extends AbstractTerminalState {
     @Override
     protected String defaultTerminalMessage() {
-        return "Scrim is canceled.";
+        return "El scrim fue cancelado.";
     }
 
     @Override
     protected String cancelMessage() {
-        return "Scrim is already canceled.";
+        return "El scrim ya fue cancelado.";
     }
 
     @Override
@@ -16,4 +16,3 @@ public class CanceledState extends AbstractTerminalState {
         return "Cancelado";
     }
 }
-

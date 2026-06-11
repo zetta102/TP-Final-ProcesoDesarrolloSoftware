@@ -65,7 +65,7 @@ public class ScrimService {
 
     public Lobby createScrim(CreateScrimRequest request) {
         if (request.playersPerSide() <= 0 || request.playersPerSide() > 5) {
-            throw new IllegalArgumentException("Players per side must be between 1 and 5.");
+            throw new IllegalArgumentException("Los jugadores por lado deben estar entre 1 y 5.");
         }
 
         int minPlayers = request.playersPerSide();
@@ -74,7 +74,7 @@ public class ScrimService {
                 : request.playersPerSide() * 2;
 
         if (maxPlayers < 2 || maxPlayers > 10) {
-            throw new IllegalArgumentException("Total player count must be between 2 and 10.");
+            throw new IllegalArgumentException("El total de jugadores debe estar entre 2 y 10.");
         }
 
         Player host = playerRepository.findByUsername(request.hostUserName());
@@ -104,8 +104,8 @@ public class ScrimService {
             return new LobbyConfirmation(
                     player.getId().toString(),
                     lobby.getId().toString(),
-                    "Waitlisted",
-                    "Lobby is full. Player added to waitlist."
+                    "En lista de espera",
+                    "El lobby está lleno. Jugador agregado a la lista de espera."
             );
         }
 
@@ -113,10 +113,10 @@ public class ScrimService {
         try {
             context.postular(player, lobbyApplication.desiredRole());
             lobbyRepository.save(lobby);
-            return new LobbyConfirmation(player.getId().toString(), lobby.getId().toString(), "Confirmed", "Joined lobby successfully.");
+            return new LobbyConfirmation(player.getId().toString(), lobby.getId().toString(), "Aceptado", "Unido al lobby exitosamente.");
         } catch (IllegalStateException e) {
-            log.info("Application rejected: {}", e.getMessage());
-            return new LobbyConfirmation(lobbyApplication.username(), lobbyApplication.lobbyId(), "Rejected", e.getMessage());
+            log.info("Postulación rechazada: {}", e.getMessage());
+            return new LobbyConfirmation(lobbyApplication.username(), lobbyApplication.lobbyId(), "Rechazado", e.getMessage());
         }
     }
 
@@ -128,9 +128,9 @@ public class ScrimService {
         try {
             context.confirmar(player);
             lobbyRepository.save(lobby);
-            return "Player confirmed successfully.";
+            return "Jugador confirmado exitosamente.";
         } catch (IllegalStateException e) {
-            return "Confirmation error: " + e.getMessage();
+            return "Error de confirmación: " + e.getMessage();
         }
     }
 
@@ -173,7 +173,7 @@ public class ScrimService {
                 createAndPersistScrim(lobby);
                 started++;
             } catch (IllegalStateException ex) {
-                log.warn("Scheduler could not start lobby {}: {}", lobby.getId(), ex.getMessage());
+                log.warn("El scheduler no pudo iniciar el lobby {}: {}", lobby.getId(), ex.getMessage());
             }
         }
 
@@ -198,7 +198,7 @@ public class ScrimService {
                 finishScrimById(scrim.getId());
                 finalized++;
             } catch (IllegalStateException ex) {
-                log.warn("Scheduler could not finish scrim {}: {}", scrim.getId(), ex.getMessage());
+                log.warn("El scheduler no pudo finalizar el scrim {}: {}", scrim.getId(), ex.getMessage());
             }
         }
 
@@ -212,7 +212,7 @@ public class ScrimService {
         try {
             context.cancelar();
             lobbyRepository.save(lobby);
-            return "Lobby " + lobbyId + " canceled.";
+            return "Lobby " + lobbyId + " cancelado.";
         } catch (IllegalStateException e) {
             return e.getMessage();
         }
@@ -235,7 +235,7 @@ public class ScrimService {
             stats.setStatus(STATUS_FINALIZADO);
             scrimStatisticsRepository.save(stats);
 
-            return "Scrim finished successfully.";
+            return "Scrim finalizado exitosamente.";
         } catch (IllegalStateException e) {
             return e.getMessage();
         }
@@ -336,7 +336,7 @@ public class ScrimService {
             LocalDateTime requested = LocalDateTime.parse(fecha);
             return lobby.getScheduledTime() != null && lobby.getScheduledTime().toLocalDate().isEqual(requested.toLocalDate());
         } catch (DateTimeParseException ex) {
-            throw new IllegalArgumentException("Invalid date format in filter. Use ISO-8601, for example 2026-06-18T21:00:00.");
+            throw new IllegalArgumentException("Formato de fecha inválido en el filtro. Use ISO-8601, por ejemplo 2026-06-18T21:00:00.");
         }
     }
 
@@ -348,7 +348,7 @@ public class ScrimService {
         try {
             return LocalDateTime.parse(rawDate);
         } catch (DateTimeParseException ex) {
-            throw new IllegalArgumentException("Invalid date format. Use ISO-8601, for example 2026-06-18T21:00:00.");
+            throw new IllegalArgumentException("Formato de fecha inválido. Use ISO-8601, por ejemplo 2026-06-18T21:00:00.");
         }
     }
 }

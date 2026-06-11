@@ -92,7 +92,7 @@ class AuthServiceTest {
 
         String result = authService.verifyEmail("neo");
 
-        assertEquals("Email verified successfully.", result);
+        assertEquals("Email verificado exitosamente.", result);
         assertEquals(EmailVerificationStatus.VERIFIED, pendingPlayer.getEmailVerificationStatus());
         verify(playerRepository).save(pendingPlayer);
     }

@@ -1,5 +1,7 @@
 package com.pds.tp.domain.entity;
 
+import com.pds.tp.domain.valueobject.ReportStatus;
+import com.pds.tp.infrastructure.persistence.converter.ReportStatusConverter;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -30,7 +32,8 @@ public class Report {
     private String reason;
     private String description;
     @Setter
-    private String status;
+    @Convert(converter = ReportStatusConverter.class)
+    private ReportStatus status;
     @Setter
     private String reportedAt;
     @Setter
@@ -44,7 +47,7 @@ public class Report {
         this.reportedPlayer = reportedPlayer;
         this.reason = reason;
         this.description = description;
-        this.status = "Created";
+        this.status = ReportStatus.PENDIENTE;
         this.reportedAt = LocalDate.now().toString();
         this.resolvedAt = null;
         this.resolutionDetails = null;
@@ -81,5 +84,3 @@ public class Report {
                 .toString();
     }
 }
-
-

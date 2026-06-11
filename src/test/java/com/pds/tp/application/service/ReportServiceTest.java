@@ -9,6 +9,7 @@ import com.pds.tp.domain.entity.Scrim;
 import com.pds.tp.domain.moderation.AutoResolverNode;
 import com.pds.tp.domain.moderation.BotAnalyzerNode;
 import com.pds.tp.domain.moderation.HumanModNode;
+import com.pds.tp.domain.valueobject.ReportStatus;
 import com.pds.tp.infrastructure.repository.PlayerRepository;
 import com.pds.tp.infrastructure.repository.ReportRepository;
 import com.pds.tp.infrastructure.repository.ScrimRepository;
@@ -94,8 +95,8 @@ class ReportServiceTest {
             return report;
         });
         when(reportRepository.findById(any(UUID.class))).thenAnswer(invocation -> {
-            // Simulate re-read after chain; status stays "Created" because autoResolver is mocked (no-op).
-            Report report = new Report(scrim, reporting, reported, "AFK", "Context Description Placeholder");
+            // Simulate re-read after chain; status stays PENDIENTE because autoResolver is mocked (no-op).
+            Report report = new Report(scrim, reporting, reported, "AFK", "Descripción de contexto pendiente");
             setId(report, invocation.getArgument(0));
             return Optional.of(report);
         });
@@ -107,7 +108,7 @@ class ReportServiceTest {
         assertNotNull(confirmation.reportId());
         assertEquals("r1", confirmation.reportingPlayerUsername());
         assertEquals("r2", confirmation.reportedPlayerUsername());
-        assertEquals("Created", confirmation.status());
+        assertEquals(ReportStatus.PENDIENTE, confirmation.status());
         verify(autoResolver).handle(any(Report.class), any(ReportRepository.class));
     }
 

@@ -70,10 +70,10 @@ public class ScrimBuilder {
             throw new IllegalStateException("El host es requerido para crear el lobby.");
         }
         if (region == null || region.isBlank()) {
-            throw new IllegalStateException("La region es requerida para crear el lobby.");
+            throw new IllegalStateException("La región es requerida para crear el lobby.");
         }
         if (maxPlayers < minPlayers) {
-            throw new IllegalStateException("El maximo de jugadores no puede ser menor al minimo.");
+            throw new IllegalStateException("El máximo de jugadores no puede ser menor al mínimo.");
         }
 
         ArrayList<Player> initialPlayers = new ArrayList<>();

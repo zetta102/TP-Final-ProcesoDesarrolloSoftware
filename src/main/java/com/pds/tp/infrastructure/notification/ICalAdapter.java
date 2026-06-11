@@ -26,7 +26,7 @@ public class ICalAdapter implements Notifier {
             log.info("[ICAL] Evento enviado a {} - {}", calendarEmail, message);
         } catch (Exception ex) {
             log.error("[ICAL] Error al enviar evento", ex);
-            throw new NotificationDeliveryException("iCal export failed", ex);
+            throw new NotificationDeliveryException("Error al exportar evento iCal", ex);
         }
     }
 

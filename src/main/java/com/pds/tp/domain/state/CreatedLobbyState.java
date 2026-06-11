@@ -5,17 +5,17 @@ import com.pds.tp.domain.entity.Player;
 public class CreatedLobbyState implements ScrimState {
     @Override
     public void postular(ScrimContext ctx, Player player, String role) {
-        throw StateErrorStyle.invalidTransition("Lobby capacity is already full.");
+        throw StateErrorStyle.invalidTransition("El lobby ya está completo.");
     }
 
     @Override
     public void confirmar(ScrimContext ctx, Player player) {
         if (!ctx.getLobby().getPlayers().contains(player)) {
-            throw StateErrorStyle.invalidTransition("Player does not belong to this lobby.");
+            throw StateErrorStyle.invalidTransition("El jugador no pertenece a este lobby.");
         }
         boolean isNewConfirmation = ctx.getLobby().getConfirmedPlayerUsernames().add(player.getUsername());
         if (!isNewConfirmation) {
-            throw StateErrorStyle.invalidTransition("Player has already confirmed participation.");
+            throw StateErrorStyle.invalidTransition("El jugador ya confirmó su participación.");
         }
 
         if (ctx.getLobby().getConfirmedPlayerUsernames().size() == ctx.getLobby().getMaxPlayers()) {
@@ -25,12 +25,12 @@ public class CreatedLobbyState implements ScrimState {
 
     @Override
     public void iniciar(ScrimContext ctx) {
-        throw StateErrorStyle.invalidTransition("Missing player confirmations.");
+        throw StateErrorStyle.invalidTransition("Faltan confirmaciones de jugadores.");
     }
 
     @Override
     public void finalizar(ScrimContext ctx) {
-        throw StateErrorStyle.invalidTransition("Scrim has not started yet.");
+        throw StateErrorStyle.invalidTransition("El scrim aún no ha comenzado.");
     }
 
     @Override
@@ -43,4 +43,3 @@ public class CreatedLobbyState implements ScrimState {
         return "LobbyArmado";
     }
 }
-

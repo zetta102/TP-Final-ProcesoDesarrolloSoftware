@@ -1,5 +1,7 @@
 package com.pds.tp.application.dto;
 
+import com.pds.tp.domain.valueobject.ReportStatus;
+
 import java.util.UUID;
 
 public record ReportConfirmation(
@@ -7,8 +9,6 @@ public record ReportConfirmation(
         String reportingPlayerUsername,
         String lobbyId,
         String reportedPlayerUsername,
-        String status
+        ReportStatus status
 ) {
 }
-
-

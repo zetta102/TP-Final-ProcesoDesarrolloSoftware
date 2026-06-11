@@ -27,7 +27,7 @@ public class ScrimLifecycleScheduler {
         int finalized = scrimService.autoFinalizeRunningScrims(now, AUTO_FINALIZE_HOURS);
 
         if (started > 0 || finalized > 0) {
-            log.info("Scheduler lifecycle update -> started: {}, finalized: {}", started, finalized);
+            log.info("Actualización del ciclo de vida del scheduler -> iniciados: {}, finalizados: {}", started, finalized);
         }
     }
 

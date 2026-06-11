@@ -89,15 +89,15 @@ class ScrimServiceFlowIntegrationTest {
 
         LobbyConfirmation applyResult = scrimService.applyToLobby(new LobbyApplication("candidate", lobbyId.toString(), "FLEX"));
 
-        assertEquals("Confirmed", applyResult.status());
+        assertEquals("Aceptado", applyResult.status());
         assertEquals("LobbyArmado", scrimLobby.getStatus());
         assertEquals(2, scrimLobby.getPlayers().size());
 
         String confirmHost = scrimService.confirmParticipation(lobbyId, "host");
         String confirmCandidate = scrimService.confirmParticipation(lobbyId, "candidate");
 
-        assertEquals("Player confirmed successfully.", confirmHost);
-        assertEquals("Player confirmed successfully.", confirmCandidate);
+        assertEquals("Jugador confirmado exitosamente.", confirmHost);
+        assertEquals("Jugador confirmado exitosamente.", confirmCandidate);
         assertEquals("Confirmado", scrimLobby.getStatus());
 
         when(scrimRepository.findByLobbyId(scrimLobby)).thenReturn(Optional.empty());
@@ -126,7 +126,7 @@ class ScrimServiceFlowIntegrationTest {
 
         String finishResult = scrimService.finishScrimById(scrim.getId());
 
-        assertTrue(finishResult.contains("Scrim finished"));
+        assertTrue(finishResult.contains("Scrim finalizado exitosamente"));
         assertEquals("Finalizado", scrimLobby.getStatus());
         assertEquals("Finalizado", scrim.getStatus());
     }

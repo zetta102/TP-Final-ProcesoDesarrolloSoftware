@@ -33,7 +33,7 @@ public class AuditLogFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
         String user = request.getUserPrincipal() != null
                 ? request.getUserPrincipal().getName()
-                : "ANONYMOUS";
+                : "ANÓNIMO";
 
         long startTime = System.currentTimeMillis();
 
@@ -42,7 +42,7 @@ public class AuditLogFilter extends OncePerRequestFilter {
         } finally {
             if (isModifyingRequest(method)) {
                 long duration = System.currentTimeMillis() - startTime;
-                log.info("{} MODIFICATION | {} {} | User: {} | Status: {} | Duration: {}ms | Timestamp: {}",
+                log.info("{} MODIFICACIÓN | {} {} | Usuario: {} | Estado: {} | Duración: {}ms | Marca de tiempo: {}",
                         AUDIT_LOG_PREFIX,
                         method,
                         path,

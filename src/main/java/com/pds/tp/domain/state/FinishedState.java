@@ -3,12 +3,12 @@ package com.pds.tp.domain.state;
 public class FinishedState extends AbstractTerminalState {
     @Override
     protected String defaultTerminalMessage() {
-        return "Scrim is already finished.";
+        return "El scrim ya fue finalizado.";
     }
 
     @Override
     protected String finalizeMessage() {
-        return "Scrim is already finished.";
+        return "El scrim ya fue finalizado.";
     }
 
     @Override
@@ -16,4 +16,3 @@ public class FinishedState extends AbstractTerminalState {
         return "Finalizado";
     }
 }
-

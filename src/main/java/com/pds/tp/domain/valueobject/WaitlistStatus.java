@@ -18,7 +18,7 @@ public final class WaitlistStatus {
         return switch (normalized) {
             case "PENDING", "PENDIENTE" -> PENDING;
             case "PROMOTED", "PROMOVIDO" -> PROMOTED;
-            default -> throw new IllegalArgumentException("Unsupported waitlist status: " + rawValue);
+            default -> throw new IllegalArgumentException("Estado de lista de espera no soportado: " + rawValue);
         };
     }
 
@@ -57,7 +57,7 @@ public final class WaitlistStatus {
 
     private static String normalize(String rawValue) {
         if (rawValue == null || rawValue.isBlank()) {
-            throw new IllegalArgumentException("Waitlist status cannot be blank.");
+            throw new IllegalArgumentException("El estado de lista de espera no puede estar vacío.");
         }
         return rawValue.trim().toUpperCase(Locale.ROOT);
     }

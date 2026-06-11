@@ -51,10 +51,10 @@ public class ReportService {
         Scrim scrim = scrimRepository.getReferenceById(UUID.fromString(reportApp.scrimId()));
 
         if (!scrim.getStatus().equals("Finalizado")) {
-            throw new IllegalStateException("You cannot report players from a non-finished scrim.");
+            throw new IllegalStateException("No se puede reportar jugadores de un scrim no finalizado.");
         }
 
-        Report report = new Report(scrim, reportingPlayer, reportedPlayer, reportApp.reason(), "Context Description Placeholder");
+        Report report = new Report(scrim, reportingPlayer, reportedPlayer, reportApp.reason(), "Descripción de contexto pendiente");
         report = reportRepository.save(report);
 
         // Execute moderation pipeline — each node mutates and persists the report.

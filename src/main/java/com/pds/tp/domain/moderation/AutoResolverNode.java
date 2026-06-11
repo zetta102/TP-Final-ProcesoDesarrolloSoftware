@@ -1,6 +1,7 @@
 package com.pds.tp.domain.moderation;
 
 import com.pds.tp.domain.entity.Report;
+import com.pds.tp.domain.valueobject.ReportStatus;
 import com.pds.tp.infrastructure.repository.ReportRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -16,9 +17,9 @@ public class AutoResolverNode extends ModerationNode {
 
         if ("AFK".equalsIgnoreCase(report.getReason()) || "LEAVER".equalsIgnoreCase(report.getReason())) {
             log.info("AutoResolverNode: Abandono confirmado por logs. Aplicando sanción automática.");
-            report.setStatus("AUTO_RESOLVED");
+            report.setStatus(ReportStatus.RESUELTO_AUTO);
             report.setResolvedAt(LocalDate.now().toString());
-            report.setResolutionDetails("Auto-resolved: " + report.getReason() + " confirmed by system logs.");
+            report.setResolutionDetails("Resuelto automáticamente: " + report.getReason() + " confirmado por logs del sistema.");
             reportRepository.save(report);
         } else {
             log.info("AutoResolverNode: Evidencia insuficiente. Escalando al bot analizador...");
@@ -26,4 +27,3 @@ public class AutoResolverNode extends ModerationNode {
         }
     }
 }
-

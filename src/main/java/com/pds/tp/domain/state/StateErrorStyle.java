@@ -11,16 +11,15 @@ public final class StateErrorStyle {
 
     public static String genericRejectedOperation(String statusName) {
         String safeStatus = statusName == null ? "Desconocido" : statusName;
-        return "Operacion no permitida en estado " + safeStatus + ".";
+        return "Operación no permitida en estado " + safeStatus + ".";
     }
 
     private static void validate(String message) {
         if (message == null || message.isBlank()) {
-            throw new IllegalArgumentException("Los mensajes de error de estado no pueden ser vacios.");
+            throw new IllegalArgumentException("Los mensajes de error de estado no pueden ser vacíos.");
         }
         if (!message.trim().endsWith(".")) {
             throw new IllegalArgumentException("Los mensajes de error de estado deben finalizar con punto.");
         }
     }
 }
-

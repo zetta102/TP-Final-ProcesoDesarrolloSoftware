@@ -39,7 +39,7 @@ public class NotificationSubscriber {
         Notifier push = notifierFactory.createPushNotifier();
         Notifier ical = notifierFactory.createICalNotifier();
 
-        String message = String.format("Lobby %s changed to state: %s",
+        String message = String.format("El lobby %s cambió al estado: %s",
                 event.getLobbyId(), event.getNuevoEstado());
         NotificationTargets targets = resolveTargets(event.getLobbyId());
 
@@ -59,7 +59,7 @@ public class NotificationSubscriber {
 
     @EventListener
     public void onScrimCreated(ScrimCreatedEvent event) {
-        String message = String.format("New scrim created (%s) in %s. Lobby: %s",
+        String message = String.format("Nuevo scrim creado (%s) en %s. Lobby: %s",
                 event.getGame(), event.getRegion(), event.getLobbyId());
         sendWithRetry(notifierFactory.createDiscordNotifier(), "#scrim-updates", message, "DISCORD");
         sendWithRetry(notifierFactory.createEmailNotifier(), "all-players@scrims.local", message, "EMAIL");
@@ -74,7 +74,7 @@ public class NotificationSubscriber {
         try {
             kafkaEventPublisher.publish(key, message);
         } catch (Exception ex) {
-            log.warn("Failed to publish event to Kafka (non-critical): {}", ex.getMessage());
+            log.warn("Error al publicar evento en Kafka (no crítico): {}", ex.getMessage());
         }
     }
 
@@ -88,16 +88,16 @@ public class NotificationSubscriber {
                 return;
             } catch (RuntimeException ex) {
                 if (attempt == MAX_ATTEMPTS) {
-                    log.error("Could not deliver {} notification after {} attempts", channel, MAX_ATTEMPTS, ex);
+                    log.error("No se pudo entregar notificación {} después de {} intentos", channel, MAX_ATTEMPTS, ex);
                     return;
                 }
 
-                log.warn("Delivery failed via {} (attempt {}), retrying...", channel, attempt, ex);
+                log.warn("Entrega fallida vía {} (intento {}), reintentando...", channel, attempt, ex);
                 try {
                     Thread.sleep(backoff);
                 } catch (InterruptedException interruptedException) {
                     Thread.currentThread().interrupt();
-                    log.error("Retry interrupted for channel {}", channel, interruptedException);
+                    log.error("Reintento interrumpido para canal {}", channel, interruptedException);
                     return;
                 }
                 backoff *= 2;

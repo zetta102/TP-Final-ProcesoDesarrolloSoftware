@@ -20,7 +20,7 @@ public final class UserRole {
             case "USER" -> USER;
             case "MODERATOR", "MOD" -> MODERATOR;
             case "ADMIN" -> ADMIN;
-            default -> throw new IllegalArgumentException("Unsupported role: " + rawValue);
+            default -> throw new IllegalArgumentException("Rol no soportado: " + rawValue);
         };
     }
 
@@ -63,7 +63,7 @@ public final class UserRole {
 
     private static String normalize(String rawValue) {
         if (rawValue == null || rawValue.isBlank()) {
-            throw new IllegalArgumentException("Role cannot be blank.");
+            throw new IllegalArgumentException("El rol no puede estar vacío.");
         }
         return rawValue.trim().toUpperCase(Locale.ROOT);
     }

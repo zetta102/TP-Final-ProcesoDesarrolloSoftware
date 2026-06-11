@@ -27,6 +27,6 @@ class SearchingStateTest {
         IllegalStateException thrown = assertThrows(IllegalStateException.class,
                 () -> context.postular(silver, "FLEX"));
 
-        assertTrue(thrown.getMessage().contains("rank"));
+        assertTrue(thrown.getMessage().contains("rango"));
     }
 }

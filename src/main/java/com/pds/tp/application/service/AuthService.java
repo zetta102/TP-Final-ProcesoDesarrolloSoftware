@@ -21,10 +21,10 @@ public class AuthService {
 
     public Player register(PlayerData playerData) {
         if (playerRepository.existsByUsername(playerData.playerName())) {
-            throw new IllegalArgumentException("Username is already registered.");
+            throw new IllegalArgumentException("El nombre de usuario ya está registrado.");
         }
         if (playerRepository.existsByEmail(playerData.email())) {
-            throw new IllegalArgumentException("Email is already registered.");
+            throw new IllegalArgumentException("El email ya está registrado.");
         }
 
         String hashedPassword = passwordEncoder.encode(playerData.password());
@@ -37,7 +37,7 @@ public class AuthService {
                 playerData.platform(),
                 playerData.availability()
         );
-        log.info("Registered new player: {}", player.getUsername());
+        log.info("Nuevo jugador registrado: {}", player.getUsername());
         return playerRepository.save(player);
     }
 
@@ -65,15 +65,14 @@ public class AuthService {
     public String verifyEmail(String username) {
         Player player = playerRepository.findByUsername(username);
         if (player == null) {
-            return "User not found.";
+            return "Usuario no encontrado.";
         }
         if (player.getEmailVerificationStatus().isVerified()) {
-            return "Email was already verified.";
+            return "El email ya fue verificado.";
         }
 
         player.setEmailVerificationStatus(EmailVerificationStatus.VERIFIED);
         playerRepository.save(player);
-        return "Email verified successfully.";
+        return "Email verificado exitosamente.";
     }
 }
-

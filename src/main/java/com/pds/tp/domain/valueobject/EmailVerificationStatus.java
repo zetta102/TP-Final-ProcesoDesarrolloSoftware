@@ -18,7 +18,7 @@ public final class EmailVerificationStatus {
         return switch (normalized) {
             case "PENDING", "PENDIENTE" -> PENDING;
             case "VERIFIED", "VERIFICADO" -> VERIFIED;
-            default -> throw new IllegalArgumentException("Unsupported email verification status: " + rawValue);
+            default -> throw new IllegalArgumentException("Estado de verificación de email no soportado: " + rawValue);
         };
     }
 
@@ -61,7 +61,7 @@ public final class EmailVerificationStatus {
 
     private static String normalize(String rawValue) {
         if (rawValue == null || rawValue.isBlank()) {
-            throw new IllegalArgumentException("Email verification status cannot be blank.");
+            throw new IllegalArgumentException("El estado de verificación de email no puede estar vacío.");
         }
         return rawValue.trim().toUpperCase(Locale.ROOT);
     }

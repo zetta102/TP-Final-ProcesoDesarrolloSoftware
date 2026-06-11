@@ -61,7 +61,7 @@ public class ScrimFacade {
 
     public String executeCommand(String id, String command, SwapPlayersRequest request) {
         if (!"swap".equals(command)) {
-            throw new IllegalArgumentException("Unsupported command: " + command);
+            throw new IllegalArgumentException("Comando no soportado: " + command);
         }
 
         Lobby lobby = lobbyRepository.getReferenceById(UUID.fromString(id));
@@ -72,7 +72,7 @@ public class ScrimFacade {
         SwapPlayersCommand swapCommand = new SwapPlayersCommand(p1, p2);
         commandExecutor.executeCommand(swapCommand, context);
 
-        return "Swap executed successfully.";
+        return "Intercambio ejecutado exitosamente.";
     }
 
     public Scrim startScrim(String id) {
