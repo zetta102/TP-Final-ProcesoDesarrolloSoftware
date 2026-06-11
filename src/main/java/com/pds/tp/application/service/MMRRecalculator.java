@@ -30,10 +30,10 @@ public class MMRRecalculator {
     /**
      * Recalculates MMR for all players in the scrim based on their individual stats and win/loss.
      *
-     * @param playerStats  list of per-player stats for the scrim
-     * @param winningTeam  "RED" or "BLUE"
-     * @param redTeam      players on the red team
-     * @param blueTeam     players on the blue team
+     * @param playerStats list of per-player stats for the scrim
+     * @param winningTeam "RED" or "BLUE"
+     * @param redTeam     players on the red team
+     * @param blueTeam    players on the blue team
      */
     public void recalculate(List<PlayerScrimStats> playerStats, String winningTeam,
                             List<Player> redTeam, List<Player> blueTeam) {
