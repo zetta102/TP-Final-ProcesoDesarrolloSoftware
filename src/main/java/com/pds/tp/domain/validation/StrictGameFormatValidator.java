@@ -19,7 +19,7 @@ public class StrictGameFormatValidator extends GameValidator {
 
     @Override
     protected void validateGameSpecificRules(Lobby lobby) {
-        // No additional game-specific rules for LoL prototype.
+        // No additional game-specific rules for strict prototype.
     }
 }
 

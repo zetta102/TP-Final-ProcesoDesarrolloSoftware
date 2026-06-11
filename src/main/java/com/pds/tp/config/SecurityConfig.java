@@ -35,21 +35,18 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(
-                                "/api/auth/register", "/v1/api/auth/register",
-                                "/api/auth/login", "/v1/api/auth/login",
-                                "/api/auth/*/verify-email", "/v1/api/auth/*/verify-email",
-                                "/api/auth/oauth/callback", "/v1/api/auth/oauth/callback",
+                                "/v1/api/auth/register",
+                                "/v1/api/auth/login",
+                                "/v1/api/auth/*/verify-email",
+                                "/v1/api/auth/oauth/callback",
                                 "/swagger-ui/**", "/v3/api-docs/**")
                         .permitAll()
                         .requestMatchers(
-                                "/api/scrims/*/acciones/*", "/v1/api/scrims/*/acciones/*",
-                                "/api/scrims/*/cancelar", "/v1/api/scrims/*/cancelar")
+                                "/v1/api/scrims/*/acciones/*",
+                                "/v1/api/scrims/*/cancelar")
                         .hasAnyRole("MOD", "ADMIN")
                         .requestMatchers(
-                                "/api/scrims/*/reportes", "/v1/api/scrims/*/reportes")
-                        .hasAnyRole("USER", "MOD", "ADMIN")
-                        .requestMatchers(
-                                "/api/players/**", "/v1/api/players/**")
+                                "/v1/api/scrims/*/reportes", "/v1/api/players/**")
                         .hasAnyRole("USER", "MOD", "ADMIN")
                         .anyRequest().authenticated()
                 )
