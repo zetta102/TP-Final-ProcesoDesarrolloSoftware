@@ -1,31 +1,51 @@
 @startuml
-control "Cron Scheduler" as Cron
+control "ScrimLifecycleScheduler" as Cron
 control "ScrimService" as Service
 entity "ScrimContext" as Context
-entity "ConfirmadoState" as State
-control "DomainEventBus" as EventBus
-boundary "NotifierFactory" as Factory
-boundary "DiscordAdapter" as Discord
-boundary "ICalAdapter" as ICal
+entity "ConfirmedState" as State
+entity "Lobby" as LobbyModel
+entity "Scrim" as ScrimModel
+entity "ScrimStatistics" as Stats
+database "PostgreSQL" as DB
+control "ApplicationEventPublisher" as EventBus
+control "NotificationSubscriber" as Notifier
 
-Cron -> Service : checkPartidasPorIniciar(LocalDateTime.now())
-Service -> DB : findScrimsToStart(currentTime)
-DB --> Service : List<Scrim>
+== Inicio Automático por Scheduler ==
+Cron -> Service : progressScrimLifecycle()
+note right: @Scheduled cada 30 segundos
 
-loop Para cada Scrim confirmada
+Service -> Service : autoStartConfirmedLobbies(LocalDateTime.now())
+Service -> DB : findAllByStatusEqualsAndScheduledTimeLessThanEqual("Confirmado", now)
+DB --> Service : List<Lobby> lobbiesToStart
+
+loop Para cada Lobby confirmado cuya fecha ya pasó
+    Service -> DB : scrimRepository.findByLobbyId(lobby)
+    DB --> Service : Optional.empty()
+
+    Service -> Service : createAndPersistScrim(lobby)
+    Service -> Context : new ScrimContext(lobby, ConfirmedState, eventPublisher)
     Service -> Context : iniciar()
-    Context -> State : iniciar(this)
-    State -> Context : setState(new EnJuegoState())
-    Context -> EventBus : publish(new PartidaIniciadaEvent(scrimId, payload))
+    Context -> State : iniciar(ctx)
+    State -> Context : setState(new PlayingState())
+    note right: Lobby status → "EnJuego"\nSe publica ScrimStateChangedEvent
+
+    Service -> DB : lobbyRepository.save(lobby)
+    Service -> ScrimModel : new Scrim(lobby, gameMode, map, "EnJuego")
+    Service -> DB : scrimRepository.save(scrim)
+
+    Service -> Stats : new ScrimStatistics(scrim, teamRed, teamBlue)
+    Service -> DB : scrimStatisticsRepository.save(stats)
 end
 
-== Asynchronous Event Handling ==
-EventBus -> Factory : createChatNotifier()
-Factory --> EventBus : discordNotifier
-EventBus -> Discord : send(Notificacion)
-Discord -> Discord : buildWebhookJSON()
-Discord -> "Discord API" : HTTP POST Webhook
+== Manejo Asíncrono de Eventos ==
+EventBus -> Notifier : onDomainEvent(ScrimStateChangedEvent)
+Notifier -> Notifier : resolvePlayerProfiles(lobbyId)
+Notifier -> Notifier : sendWithRetry() [exponential backoff, max 3]
+note right: Notifica por PUSH, EMAIL, DISCORD, ICAL\nsegún preferencias de cada jugador
 
-EventBus -> ICal : generateEvent()
-ICal -> "User Calendar" : Sync via Adapter
+== Inicio Manual ==
+actor "Organizador" as Org
+Org -> Service : POST /v1/api/scrims/{id}/iniciar
+Service -> Service : startScrim(ScrimData(lobbyId))
+note right: Misma lógica de createAndPersistScrim()
 @enduml

@@ -9,6 +9,8 @@ import com.pds.tp.domain.entity.Scrim;
 import com.pds.tp.domain.entity.ScrimStatistics;
 import com.pds.tp.domain.state.ScrimStateResolver;
 import com.pds.tp.domain.strategy.ByMMRStrategy;
+import com.pds.tp.domain.validation.DefaultGameValidator;
+import com.pds.tp.domain.validation.GameValidatorFactory;
 import com.pds.tp.infrastructure.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,10 +46,16 @@ class ScrimServiceFlowIntegrationTest {
     private ScrimStatisticsRepository scrimStatisticsRepository;
 
     @Mock
+    private PlayerScrimStatsRepository playerScrimStatsRepository;
+
+    @Mock
     private WaitlistRepository waitlistRepository;
 
     @Mock
     private ApplicationEventPublisher eventPublisher;
+
+    @Mock
+    private MMRRecalculator mmrRecalculator;
 
     private ScrimService scrimService;
 
@@ -58,10 +66,13 @@ class ScrimServiceFlowIntegrationTest {
                 lobbyRepository,
                 playerRepository,
                 scrimStatisticsRepository,
+                playerScrimStatsRepository,
                 waitlistRepository,
                 eventPublisher,
                 new ByMMRStrategy(),
-                new ScrimStateResolver()
+                new ScrimStateResolver(),
+                new GameValidatorFactory(new DefaultGameValidator(), new DefaultGameValidator(), new DefaultGameValidator()),
+                mmrRecalculator
         );
     }
 

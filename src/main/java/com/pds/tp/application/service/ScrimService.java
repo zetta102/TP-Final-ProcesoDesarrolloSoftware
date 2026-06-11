@@ -5,6 +5,7 @@ import com.pds.tp.domain.builder.ScrimBuilder;
 import com.pds.tp.domain.entity.*;
 import com.pds.tp.domain.event.ScrimCreatedEvent;
 import com.pds.tp.domain.shared.RankScale;
+import com.pds.tp.domain.validation.GameValidatorFactory;
 import com.pds.tp.domain.state.ScrimContext;
 import com.pds.tp.domain.state.ScrimStateResolver;
 import com.pds.tp.domain.strategy.MatchmakingStrategy;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -32,26 +34,35 @@ public class ScrimService {
     private final LobbyRepository lobbyRepository;
     private final PlayerRepository playerRepository;
     private final ScrimStatisticsRepository scrimStatisticsRepository;
+    private final PlayerScrimStatsRepository playerScrimStatsRepository;
     private final WaitlistRepository waitlistRepository;
 
     private final ApplicationEventPublisher eventPublisher;
     private final MatchmakingStrategy matchmakingStrategy;
     private final ScrimStateResolver stateResolver;
+    private final GameValidatorFactory gameValidatorFactory;
+    private final MMRRecalculator mmrRecalculator;
 
     public ScrimService(ScrimRepository scrimRepository, LobbyRepository lobbyRepository,
                         PlayerRepository playerRepository, ScrimStatisticsRepository scrimStatisticsRepository,
+                        PlayerScrimStatsRepository playerScrimStatsRepository,
                         WaitlistRepository waitlistRepository,
                         ApplicationEventPublisher eventPublisher,
                         MatchmakingStrategy matchmakingStrategy,
-                        ScrimStateResolver stateResolver) {
+                        ScrimStateResolver stateResolver,
+                        GameValidatorFactory gameValidatorFactory,
+                        MMRRecalculator mmrRecalculator) {
         this.scrimRepository = scrimRepository;
         this.lobbyRepository = lobbyRepository;
         this.playerRepository = playerRepository;
         this.scrimStatisticsRepository = scrimStatisticsRepository;
+        this.playerScrimStatsRepository = playerScrimStatsRepository;
         this.waitlistRepository = waitlistRepository;
         this.eventPublisher = eventPublisher;
         this.matchmakingStrategy = matchmakingStrategy;
         this.stateResolver = stateResolver;
+        this.gameValidatorFactory = gameValidatorFactory;
+        this.mmrRecalculator = mmrRecalculator;
     }
 
 
@@ -80,6 +91,9 @@ public class ScrimService {
                 .rango(request.minRank(), request.maxRank())
                 .juego(request.game() != null ? request.game() : request.format(), request.map())
                 .latenciaMax(request.maxLatency())
+                .duracion(request.duration())
+                .modalidad(request.mode())
+                .validator(gameValidatorFactory.resolve(request.game()))
                 .build();
 
         Lobby savedLobby = lobbyRepository.save(lobby);
@@ -197,16 +211,44 @@ public class ScrimService {
         return finalized;
     }
 
-    public String cancelLobbyById(UUID lobbyId) {
+    public String cancelLobbyById(UUID lobbyId, String reason) {
         Lobby lobby = lobbyRepository.getReferenceById(lobbyId);
         ScrimContext context = new ScrimContext(lobby, stateResolver.resolve(lobby.getStatus()), eventPublisher);
 
         try {
+            // Apply late-cancellation penalty if lobby is Confirmado and close to scheduled time
+            applyLateCancellationPenalty(lobby);
+
+            lobby.setCancelReason(reason);
             context.cancelar();
             lobbyRepository.save(lobby);
-            return "Lobby " + lobbyId + " cancelado.";
+            return "Lobby " + lobbyId + " cancelado." + (reason != null ? " Motivo: " + reason : "");
         } catch (IllegalStateException e) {
             return e.getMessage();
+        }
+    }
+
+    private void applyLateCancellationPenalty(Lobby lobby) {
+        if (!"Confirmado".equals(lobby.getStatus())) {
+            return;
+        }
+        if (lobby.getScheduledTime() == null || lobby.getHost() == null) {
+            return;
+        }
+
+        long hoursUntilStart = ChronoUnit.HOURS.between(LocalDateTime.now(), lobby.getScheduledTime());
+        if (hoursUntilStart < 1) {
+            Player host = lobby.getHost();
+            host.setStrikes(host.getStrikes() + 1);
+            log.warn("Penalización aplicada al organizador {} por cancelación tardía. Strikes: {}",
+                    host.getUsername(), host.getStrikes());
+
+            if (host.getStrikes() >= 3) {
+                host.setBanned(true);
+                log.warn("Usuario {} baneado por acumulación de strikes ({})",
+                        host.getUsername(), host.getStrikes());
+            }
+            playerRepository.save(host);
         }
     }
 
@@ -316,7 +358,29 @@ public class ScrimService {
             statistics.setStatus(request.status());
         }
 
-        return scrimStatisticsRepository.save(statistics);
+        scrimStatisticsRepository.save(statistics);
+
+        // Persist per-player stats and recalculate MMR
+        List<PlayerScrimStats> playerStatsList = new ArrayList<>();
+        if (request.playerStats() != null && !request.playerStats().isEmpty()) {
+            for (CreateStatisticsRequest.PlayerStatsEntry entry : request.playerStats()) {
+                Player player = playerRepository.findByUsername(entry.username());
+                if (player != null) {
+                    PlayerScrimStats pss = new PlayerScrimStats(
+                            statistics, player, entry.kills(), entry.deaths(), entry.assists(), entry.mvp());
+                    playerScrimStatsRepository.save(pss);
+                    playerStatsList.add(pss);
+                }
+            }
+
+            // Trigger MMR recalculation if winning team is known
+            if (request.winningTeam() != null && !request.winningTeam().isBlank()) {
+                mmrRecalculator.recalculate(playerStatsList, request.winningTeam(),
+                        statistics.getRedTeam(), statistics.getBlueTeam());
+            }
+        }
+
+        return statistics;
     }
 
     private int compareRanks(String a, String b) {

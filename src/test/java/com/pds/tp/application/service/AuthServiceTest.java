@@ -1,8 +1,11 @@
 package com.pds.tp.application.service;
 
 import com.pds.tp.application.dto.PlayerData;
+import com.pds.tp.config.JwtService;
 import com.pds.tp.domain.entity.Player;
 import com.pds.tp.domain.valueobject.EmailVerificationStatus;
+import com.pds.tp.infrastructure.MockOAuthProvider;
+import com.pds.tp.infrastructure.notification.EmailService;
 import com.pds.tp.infrastructure.repository.PlayerRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,6 +27,15 @@ class AuthServiceTest {
 
     @Mock
     private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private EmailService emailService;
+
+    @Mock
+    private MockOAuthProvider oAuthProvider;
+
+    @Mock
+    private JwtService jwtService;
 
     @InjectMocks
     private AuthService authService;
@@ -60,8 +72,11 @@ class AuthServiceTest {
 
         when(playerRepository.findByEmail("neo@test.com")).thenReturn(verifiedPlayer);
         when(passwordEncoder.matches("plain", "hashed")).thenReturn(true);
+        when(jwtService.generateToken(verifiedPlayer)).thenReturn("mock-jwt-token");
 
-        assertTrue(authService.authenticate("neo@test.com", "plain"));
+        String token = authService.authenticate("neo@test.com", "plain");
+        assertNotNull(token);
+        assertEquals("mock-jwt-token", token);
     }
 
     @Test
@@ -72,7 +87,8 @@ class AuthServiceTest {
 
         when(playerRepository.findByUsername("neo")).thenReturn(pendingPlayer);
 
-        assertFalse(authService.authenticate("neo", "plain"));
+        String token = authService.authenticate("neo", "plain");
+        assertNull(token);
         verify(passwordEncoder, never()).matches(any(), any());
     }
 

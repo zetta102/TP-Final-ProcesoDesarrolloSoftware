@@ -2,18 +2,19 @@ package com.pds.tp.infrastructure.notification;
 
 import com.pds.tp.domain.entity.Lobby;
 import com.pds.tp.domain.entity.Player;
+import com.pds.tp.domain.entity.SavedSearch;
 import com.pds.tp.domain.event.ScrimCreatedEvent;
 import com.pds.tp.domain.event.ScrimStateChangedEvent;
 import com.pds.tp.infrastructure.repository.LobbyRepository;
+import com.pds.tp.infrastructure.repository.SavedSearchRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.*;
 
 /**
- * Observer that reacts to scrim domain events and fans them out through all enabled channels.
+ * Observer that reacts to scrim domain events and fans them out through player-enabled channels only.
  */
 @Slf4j
 @Component
@@ -23,35 +24,42 @@ public class NotificationSubscriber {
 
     private final NotifierFactory notifierFactory;
     private final LobbyRepository lobbyRepository;
+    private final SavedSearchRepository savedSearchRepository;
     private final KafkaEventPublisher kafkaEventPublisher;
 
     public NotificationSubscriber(NotifierFactory notifierFactory, LobbyRepository lobbyRepository,
+                                  SavedSearchRepository savedSearchRepository,
                                   KafkaEventPublisher kafkaEventPublisher) {
         this.notifierFactory = notifierFactory;
         this.lobbyRepository = lobbyRepository;
+        this.savedSearchRepository = savedSearchRepository;
         this.kafkaEventPublisher = kafkaEventPublisher;
     }
 
     @EventListener
     public void onDomainEvent(ScrimStateChangedEvent event) {
-        Notifier discord = notifierFactory.createDiscordNotifier();
-        Notifier email = notifierFactory.createEmailNotifier();
-        Notifier push = notifierFactory.createPushNotifier();
-        Notifier ical = notifierFactory.createICalNotifier();
-
         String message = String.format("El lobby %s cambió al estado: %s",
                 event.getLobbyId(), event.getNuevoEstado());
-        NotificationTargets targets = resolveTargets(event.getLobbyId());
 
-        // Send one event through all channels, then per-user targets for personalized channels.
-        sendWithRetry(discord, "#scrim-updates", message, "DISCORD");
-        for (String emailTarget : targets.emailTargets()) {
-            sendWithRetry(email, emailTarget, message, "EMAIL");
+        List<PlayerNotificationProfile> profiles = resolvePlayerProfiles(event.getLobbyId());
+
+        // Always send a general Discord channel notification (broadcast, not user-specific).
+        sendWithRetry(notifierFactory.createDiscordNotifier(), "#scrim-updates", message, "DISCORD");
+
+        // Per-player notifications based on their enabled channels.
+        for (PlayerNotificationProfile profile : profiles) {
+            Set<String> channels = profile.enabledChannels();
+
+            if (channels.contains("EMAIL") && profile.email() != null) {
+                sendWithRetry(notifierFactory.createEmailNotifier(), profile.email(), message, "EMAIL");
+            }
+            if (channels.contains("PUSH")) {
+                sendWithRetry(notifierFactory.createPushNotifier(), profile.username(), message, "PUSH");
+            }
+            if (channels.contains("ICAL") && profile.email() != null) {
+                sendWithRetry(notifierFactory.createICalNotifier(), profile.email(), message, "ICAL");
+            }
         }
-        for (String pushTarget : targets.pushTargets()) {
-            sendWithRetry(push, pushTarget, message, "PUSH");
-        }
-        sendWithRetry(ical, "calendar@scrims.local", message, "ICAL");
 
         // Enqueue to Kafka for async downstream consumers.
         publishToKafka(event.getLobbyId().toString(), message);
@@ -61,9 +69,41 @@ public class NotificationSubscriber {
     public void onScrimCreated(ScrimCreatedEvent event) {
         String message = String.format("Nuevo scrim creado (%s) en %s. Lobby: %s",
                 event.getGame(), event.getRegion(), event.getLobbyId());
+
+        // Broadcast notification to Discord channel
         sendWithRetry(notifierFactory.createDiscordNotifier(), "#scrim-updates", message, "DISCORD");
-        sendWithRetry(notifierFactory.createEmailNotifier(), "all-players@scrims.local", message, "EMAIL");
-        sendWithRetry(notifierFactory.createPushNotifier(), "all-players", message, "PUSH");
+
+        // Notify players whose saved searches match this new scrim
+        Lobby lobby = lobbyRepository.findById(event.getLobbyId()).orElse(null);
+        if (lobby != null) {
+            List<SavedSearch> allSearches = savedSearchRepository.findAll();
+            Set<Player> notifiedPlayers = new HashSet<>();
+
+            for (SavedSearch search : allSearches) {
+                if (search.matchesLobby(lobby) && !notifiedPlayers.contains(search.getPlayer())) {
+                    Player player = search.getPlayer();
+                    notifiedPlayers.add(player);
+
+                    String alertMessage = String.format("¡Nuevo scrim que coincide con tus preferencias! %s en %s. Lobby: %s",
+                            event.getGame(), event.getRegion(), event.getLobbyId());
+
+                    Set<String> channels = parseEnabledChannels(player.getEnabledNotificationChannels());
+                    if (channels.contains("EMAIL") && player.getEmail() != null) {
+                        sendWithRetry(notifierFactory.createEmailNotifier(), player.getEmail(), alertMessage, "EMAIL");
+                    }
+                    if (channels.contains("PUSH")) {
+                        sendWithRetry(notifierFactory.createPushNotifier(), player.getUsername(), alertMessage, "PUSH");
+                    }
+                }
+            }
+
+            log.info("Alertas de búsquedas guardadas enviadas a {} jugadores", notifiedPlayers.size());
+        } else {
+            // Fallback: broadcast to all channels
+            sendWithRetry(notifierFactory.createEmailNotifier(), "all-players@scrims.local", message, "EMAIL");
+            sendWithRetry(notifierFactory.createPushNotifier(), "all-players", message, "PUSH");
+        }
+
         sendWithRetry(notifierFactory.createICalNotifier(), "calendar@scrims.local", message, "ICAL");
 
         // Enqueue to Kafka for async downstream consumers.
@@ -106,41 +146,49 @@ public class NotificationSubscriber {
         }
     }
 
-    private NotificationTargets resolveTargets(java.util.UUID lobbyId) {
+    private List<PlayerNotificationProfile> resolvePlayerProfiles(UUID lobbyId) {
         return lobbyRepository.findById(lobbyId)
-                .map(this::toTargets)
-                .orElseGet(() -> new NotificationTargets(
-                        Set.of("all-players@scrims.local"),
-                        Set.of("all-players")
-                ));
+                .map(this::toProfiles)
+                .orElseGet(() -> List.of(new PlayerNotificationProfile(
+                        "all-players", "all-players@scrims.local", Set.of("PUSH", "EMAIL", "DISCORD", "ICAL")
+                )));
     }
 
-    private NotificationTargets toTargets(Lobby lobby) {
-        Set<String> emailTargets = new LinkedHashSet<>();
-        Set<String> pushTargets = new LinkedHashSet<>();
+    private List<PlayerNotificationProfile> toProfiles(Lobby lobby) {
+        List<PlayerNotificationProfile> profiles = new ArrayList<>();
 
         if (lobby.getPlayers() != null) {
             for (Player player : lobby.getPlayers()) {
-                if (player.getEmail() != null && !player.getEmail().isBlank()) {
-                    emailTargets.add(player.getEmail());
-                }
-                if (player.getUsername() != null && !player.getUsername().isBlank()) {
-                    pushTargets.add(player.getUsername());
-                }
+                Set<String> channels = parseEnabledChannels(player.getEnabledNotificationChannels());
+                String email = (player.getEmail() != null && !player.getEmail().isBlank()) ? player.getEmail() : null;
+                String username = (player.getUsername() != null && !player.getUsername().isBlank()) ? player.getUsername() : "unknown";
+                profiles.add(new PlayerNotificationProfile(username, email, channels));
             }
         }
 
-        // Fall back to broadcast targets so events are not dropped when a lobby has incomplete user data.
-        if (emailTargets.isEmpty()) {
-            emailTargets.add("all-players@scrims.local");
-        }
-        if (pushTargets.isEmpty()) {
-            pushTargets.add("all-players");
+        if (profiles.isEmpty()) {
+            profiles.add(new PlayerNotificationProfile("all-players", "all-players@scrims.local",
+                    Set.of("PUSH", "EMAIL", "DISCORD", "ICAL")));
         }
 
-        return new NotificationTargets(emailTargets, pushTargets);
+        return profiles;
     }
 
-    private record NotificationTargets(Set<String> emailTargets, Set<String> pushTargets) {
+    private Set<String> parseEnabledChannels(String raw) {
+        if (raw == null || raw.isBlank()) {
+            // Default: all channels enabled.
+            return Set.of("PUSH", "EMAIL", "DISCORD", "ICAL");
+        }
+        Set<String> channels = new LinkedHashSet<>();
+        for (String part : raw.split(",")) {
+            String trimmed = part.trim().toUpperCase();
+            if (!trimmed.isEmpty()) {
+                channels.add(trimmed);
+            }
+        }
+        return channels.isEmpty() ? Set.of("PUSH", "EMAIL", "DISCORD", "ICAL") : channels;
+    }
+
+    private record PlayerNotificationProfile(String username, String email, Set<String> enabledChannels) {
     }
 }

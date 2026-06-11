@@ -1,29 +1,42 @@
 @startuml
 actor "Usuario" as User
-control "AuthService\n(Rate Limiter)" as Auth
+control "AuthController" as API
+control "AuthService" as Auth
+control "JwtService" as Jwt
+control "RateLimitingFilter" as RateLimit
 database "PostgreSQL" as DB
 
-User -> Auth : POST /api/auth/login (email, pass)
-Auth -> Auth : Check Rate Limits
-Auth -> Auth : authenticate(email, pass)
-Auth -> DB : findByEmail(email)
-DB --> Auth : userRecord
+User -> RateLimit : POST /v1/api/auth/login (identifier, password)
+RateLimit -> RateLimit : checkRateLimit(clientKey)
 
-alt userRecord == null
-    Auth --> API : NotFoundException
-    API --> User : 401 Unauthorized
-else Check Status
-    Auth -> Auth : checkBannedStatus(userRecord.strikes)
+alt Rate limit excedido
+    RateLimit --> User : 429 Too Many Requests
+else Dentro del límite
+    RateLimit -> API : forward request
 end
 
-Auth -> Auth : verifyHash(pass, userRecord.passwordHash)
+API -> Auth : authenticate(identifier, password)
+Auth -> Auth : resolvePlayer(identifier) [por email o username]
+Auth -> DB : findByEmail() o findByUsername()
+DB --> Auth : player
 
-alt Hash matches
-    Auth -> Auth : generateJWT(userRecord.id, userRecord.roles)
-    Auth --> API : JWT Token
-    API --> User : 200 OK (Bearer Token)
+alt player == null
+    Auth --> API : null (no encontrado)
+    API --> User : 401 Unauthorized
+else player.isBanned()
+    Auth --> API : null (usuario baneado)
+    API --> User : 401 "Credenciales inválidas, email no verificado o usuario baneado."
+else !emailVerificationStatus.isVerified()
+    Auth --> API : null (email no verificado)
+    API --> User : 401 Unauthorized
+else passwordEncoder.matches(pass, hash)
+    Auth -> Jwt : generateToken(player)
+    Jwt -> Jwt : build JWT (sub=username, role, userId, exp=24h)
+    Jwt --> Auth : jwtToken
+    Auth --> API : token
+    API --> User : 200 OK {"token": "Bearer <jwt>", "mensaje": "Autenticación exitosa"}
 else Hash mismatch
-    Auth --> API : Unauthorized Exception
+    Auth --> API : null
     API --> User : 401 Unauthorized
 end
 @enduml

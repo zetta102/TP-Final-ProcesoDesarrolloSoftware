@@ -1,25 +1,71 @@
 @startuml
-actor "Organizador / Bot" as Org
+actor "Organizador" as Org
+control "ScrimController" as API
+control "ScrimFacade" as Facade
 control "ScrimService" as Service
-entity "ScrimContext" as Context
-entity "EnJuegoState" as State
-database "PostgreSQL" as DB
 control "MMRRecalculator" as Recalculator
+entity "ScrimContext" as Context
+entity "PlayingState" as State
+entity "Scrim" as ScrimModel
+entity "ScrimStatistics" as Stats
+entity "PlayerScrimStats" as PlayerStats
+database "PostgreSQL" as DB
 
-Org -> Service : POST /api/scrims/{id}/finalizar finalizarScrim(scrimId)
+== Paso 1: Finalizar Scrim ==
+Org -> API : POST /v1/api/scrims/{id}/finalizar
+API -> Facade : finishScrim(id)
+Facade -> Service : finishScrimById(scrimId)
+
+Service -> DB : scrimRepository.getReferenceById(scrimId)
+DB --> Service : scrim
+Service -> Service : lobby = scrim.getLobbyId()
+Service -> Context : new ScrimContext(lobby, PlayingState, eventPublisher)
 Service -> Context : finalizar()
-Context -> State : finalizar(this)
-State -> Context : setState(new FinalizadoState())
-Context --> Service : 200 OK
+Context -> State : finalizar(ctx)
+State -> Context : setState(new FinishedState())
+note right: Lobby status → "Finalizado"\nSe publica ScrimStateChangedEvent
 
-== Carga de Estadísticas ==
-Org -> Service : POST /api/scrims/{id}/estadisticas (JSON Array) procesarEstadisticas(dataList)
+Service -> DB : lobbyRepository.save(lobby)
+Service -> ScrimModel : scrim.setStatus("Finalizado")
+Service -> DB : scrimRepository.save(scrim)
+Service -> Stats : stats.setEndTime(now)
+Service -> Stats : stats.setStatus("Finalizado")
+Service -> DB : scrimStatisticsRepository.save(stats)
 
-loop Para cada jugador
-    Service -> DB : save(new Estadistica(kda, mvp))
-    Service -> Recalculator : recalcularMMR(userId, kda_ratio, win)
-    Recalculator -> DB : update(Usuario.rangoPorJuego)
+Service --> Facade : "Scrim finalizado exitosamente."
+Facade --> API : mensaje
+API --> Org : 200 OK
+
+== Paso 2: Cargar Estadísticas por Jugador ==
+Org -> API : POST /v1/api/scrims/{id}/estadisticas (CreateStatisticsRequest)
+API -> Facade : saveStatistics(id, request)
+Facade -> Service : saveStatistics(scrimId, request)
+
+Service -> DB : scrimStatisticsRepository.findByScrimId(scrim)
+DB --> Service : statistics
+
+Service -> Stats : setWinningTeam(request.winningTeam)
+
+loop Para cada PlayerStatsEntry en request.playerStats
+    Service -> DB : playerRepository.findByUsername(entry.username)
+    DB --> Service : player
+    Service -> PlayerStats : new PlayerScrimStats(stats, player, kills, deaths, assists, mvp)
+    Service -> DB : playerScrimStatsRepository.save(pss)
 end
 
-Service --> API : 201 Created
+== Paso 3: Recalcular MMR ==
+Service -> Recalculator : recalculate(playerStatsList, winningTeam, redTeam, blueTeam)
+
+loop Para cada PlayerScrimStats
+    Recalculator -> Recalculator : determinar si ganó (equipo RED o BLUE)
+    Recalculator -> Recalculator : actualizar gamesPlayed, wins/losses
+    Recalculator -> Recalculator : recalcular KDA (promedio móvil)
+    Recalculator -> Recalculator : MMR += 25 (win) o -= 20 (loss) + 10 (MVP bonus)
+    Recalculator -> Recalculator : visibleRank = RankScale.fromValue(rank/100)
+    Recalculator -> DB : playerRepository.save(player)
+end
+
+Service --> Facade : ScrimStatistics actualizado
+Facade --> API : ScrimStatistics
+API --> Org : 200 OK
 @enduml

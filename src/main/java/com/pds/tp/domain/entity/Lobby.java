@@ -35,6 +35,10 @@ public class Lobby {
     private String map;
     @Setter
     private String status;
+    private String duration;
+    private String modality;
+    @Setter
+    private String cancelReason;
     @OneToOne
     private Player host;
     @OneToMany
@@ -42,7 +46,7 @@ public class Lobby {
     @ElementCollection(fetch = FetchType.EAGER)
     private Set<String> confirmedPlayerUsernames;
 
-    public Lobby(LocalDateTime scheduledTime, int maxPlayers, int minPlayers, String region, String minRank, String maxRank, int maxPing, String gameMode, String map, String status, Player host, List<Player> players, Set<String> confirmedPlayerUsernames) {
+    public Lobby(LocalDateTime scheduledTime, int maxPlayers, int minPlayers, String region, String minRank, String maxRank, int maxPing, String gameMode, String map, String status, String duration, String modality, Player host, List<Player> players, Set<String> confirmedPlayerUsernames) {
         this.scheduledTime = scheduledTime;
         this.maxPlayers = maxPlayers;
         this.minPlayers = minPlayers;
@@ -53,6 +57,9 @@ public class Lobby {
         this.gameMode = gameMode;
         this.map = map;
         this.status = status;
+        this.duration = duration;
+        this.modality = modality;
+        this.cancelReason = null;
         this.host = host;
         this.players = players;
         this.confirmedPlayerUsernames = confirmedPlayerUsernames;

@@ -1,34 +1,49 @@
 @startuml
-control "Cron Scheduler" as Cron
-control "MatchmakingEngine" as Engine
+control "ScrimLifecycleScheduler" as Cron
+control "ScrimService" as Service
 entity "ScrimContext" as Context
-control "MatchmakingStrategy" as Strategy
+entity "SearchingState" as State
+control "MatchmakingStrategy\n(ByMMR/ByLatency/ByHistory)" as Strategy
+entity "Lobby" as LobbyModel
+entity "Waitlist" as WaitlistModel
 database "PostgreSQL" as DB
-control "DomainEventBus" as EventBus
 
-Cron -> Engine : ejecutarCicloEmparejamiento()
-Engine -> DB : findScrimsEnEstado(BuscandoState)
-DB --> Engine : List<Scrim>
+Cron -> Service : runMatchmakingPass()
+note right: @Scheduled cada 60 segundos
 
-loop Para cada Scrim activo
-    Engine -> DB : fetchCandidatos(scrim.id, limit=500)
-    DB --> Engine : List<Usuario> candidatos
-    
-    Engine -> Context : getMatchmakingStrategy()
-    Context --> Engine : currentStrategy (ej. ByMMRStrategy)
-    
-    Engine -> Strategy : seleccionar(candidatos, scrim)
-    Strategy -> Strategy : applyHeuristics(MMR, Ping, Historial)
-    Strategy --> Engine : List<Usuario> seleccionados
-    
-    alt seleccionados.size() == scrim.cuposRequeridos
-        Engine -> Context : setJugadoresAEquipos(seleccionados)
-        Engine -> Context : setState(new LobbyArmadoState())
-        
-        Context -> EventBus : publish(new LobbyArmadoEvent(scrim.id, seleccionados))
-        Engine -> DB : update(scrim)
-    else Candidatos insuficientes
-        Engine -> Engine : continue (mantener en Buscando)
+Service -> DB : lobbyRepository.findAllByStatusEquals("Buscando")
+DB --> Service : List<Lobby> activeLobbies
+
+loop Para cada Lobby en estado "Buscando"
+    == Promoción de lista de espera ==
+    Service -> Service : promoteWaitlistedPlayers(lobby)
+    Service -> DB : waitlistRepository.findAllByLobbyAndStatus(lobby, PENDING)
+    DB --> Service : List<Waitlist> pendingEntries
+
+    loop Para cada entry con cupos disponibles
+        Service -> Context : postular(entry.player, entry.desiredRole)
+        alt Éxito
+            Service -> WaitlistModel : status = PROMOTED
+            Service -> DB : save(entry)
+        end
     end
+
+    == Emparejamiento por estrategia ==
+    Service -> DB : playerRepository.findAll()
+    DB --> Service : List<Player> candidatos
+
+    Service -> Strategy : seleccionar(candidatos, lobby)
+    Strategy -> Strategy : filtrar por región, rango, latencia, historial
+    Strategy -> Strategy : ordenar por score/compatibilidad
+    Strategy --> Service : List<Player> seleccionados
+
+    Service -> Context : new ScrimContext(lobby, SearchingState, eventPublisher)
+
+    loop Para cada Player seleccionado
+        Service -> Context : postular(player, "FLEX")
+        note right: SearchingState valida y agrega al lobby.\nSi se llena → transición automática a CreatedLobbyState
+    end
+
+    Service -> DB : lobbyRepository.save(lobby)
 end
 @enduml

@@ -41,11 +41,24 @@ public class Player {
     private String visibleRank;
     @Setter
     private int averagePingMs;
+    @Setter
     private int rank;
+    @Setter
     private int gamesPlayed;
+    @Setter
     private int wins;
+    @Setter
     private int losses;
+    @Setter
     private double kda;
+    @Setter
+    private String enabledNotificationChannels;
+    @Setter
+    private int strikes;
+    @Setter
+    private boolean banned;
+    @Setter
+    private String verificationToken;
 
     public Player(String username, String email, String password, String preferredRole, String region, String platform, String availability) {
         this.username = username;
@@ -64,6 +77,10 @@ public class Player {
         this.wins = 0;
         this.losses = 0;
         this.kda = 0.0;
+        this.enabledNotificationChannels = "PUSH,EMAIL,DISCORD,ICAL";
+        this.strikes = 0;
+        this.banned = false;
+        this.verificationToken = null;
     }
 
     @Override

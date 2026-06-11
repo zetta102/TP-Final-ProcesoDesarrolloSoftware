@@ -1,36 +1,55 @@
 @startuml
 actor "Jugador" as Player
+control "ScrimController" as API
+control "ScrimFacade" as Facade
 control "ScrimService" as Service
 entity "ScrimContext" as Context
-entity "BuscandoState" as State
+entity "SearchingState" as State
+entity "Lobby" as LobbyModel
+entity "Waitlist" as WaitlistModel
 database "PostgreSQL" as DB
 
-Player -> Service : POST /api/scrims/{id}/postulaciones registrarPostulacion(userId, scrimId, rol)
-Service -> DB : getScrimAndUser(scrimId, userId)
-DB --> Service : scrim, user
+Player -> API : POST /v1/api/scrims/{id}/postulaciones (username, desiredRole)
+API -> Facade : applyToScrim(id, request)
+Facade -> Service : applyToLobby(LobbyApplication)
 
-Service -> Context : postular(user, rol)
-Context -> State : postular(this, user, rol)
+Service -> DB : lobbyRepository.getReferenceById(lobbyId)
+DB --> Service : lobby
+Service -> DB : playerRepository.findByUsername(username)
+DB --> Service : player
 
-State -> State : validarLimites(user.getMMR(), ctx.rangoMin/Max)
-State -> State : validarLatencia(user.region, ctx.region)
+alt Lobby ya está lleno (players.size >= maxPlayers)
+    Service -> Service : enqueueWaitlistIfNeeded(lobby, player, role)
+    Service -> DB : waitlistRepository.save(new Waitlist(lobby, player, role))
+    Service --> Facade : LobbyConfirmation("En lista de espera")
+    Facade --> API : LobbyConfirmation
+    API --> Player : 200 OK "El lobby está lleno. Jugador agregado a la lista de espera."
+else Lobby tiene cupos disponibles
+    Service -> Context : new ScrimContext(lobby, SearchingState, eventPublisher)
+    Service -> Context : postular(player, desiredRole)
+    Context -> State : postular(ctx, player, role)
 
-alt Validaciones Exitosas
-    State -> DB : save(new Postulacion(user, scrim, rol))
-    
-    State -> Context : evaluarCapacidad()
-    alt cuposActuales == cuposRequeridos
-        Context -> Context : setState(new LobbyArmadoState())
+    State -> State : validar: jugador no duplicado
+    State -> State : validar: player.region == lobby.region
+    State -> State : validar: RankScale(visibleRank) dentro de [minRank, maxRank]
+
+    alt Validaciones Exitosas
+        State -> LobbyModel : players.add(player)
+
+        alt players.size() == maxPlayers
+            State -> Context : setState(new CreatedLobbyState())
+            note right: Lobby transiciona a "LobbyArmado"\nSe publica ScrimStateChangedEvent
+        end
+
+        Service -> DB : lobbyRepository.save(lobby)
+        Service --> Facade : LobbyConfirmation("Aceptado")
+        Facade --> API : LobbyConfirmation
+        API --> Player : 200 OK "Unido al lobby exitosamente."
+    else Validación Fallida
+        State --> Context : IllegalStateException
+        Service --> Facade : LobbyConfirmation("Rechazado", mensaje)
+        Facade --> API : LobbyConfirmation
+        API --> Player : 200 OK (status=Rechazado, motivo)
     end
-    
-    State --> Context : success
-    Context --> Service : OK
-    Service --> API : 201 Created
-    API --> Player : Postulación Registrada
-else Validación Fallida (ej. Rango Hierro en partida Oro)
-    State --> Context : Exception(Violación de Restricciones)
-    Context --> Service : Error
-    Service --> API : 400 Bad Request
-    API --> Player : Error: Rango Insuficiente
 end
 @enduml

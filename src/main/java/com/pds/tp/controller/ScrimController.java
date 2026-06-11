@@ -67,8 +67,11 @@ public class ScrimController {
     }
 
     @PostMapping("/{id}/cancelar")
-    public ResponseEntity<Map<String, String>> cancel(@PathVariable String id) {
-        return ResponseEntity.ok(messageBody(scrimFacade.cancelScrim(id)));
+    public ResponseEntity<Map<String, String>> cancel(
+            @PathVariable String id,
+            @RequestBody(required = false) CancelScrimRequest request) {
+        String reason = (request != null) ? request.reason() : null;
+        return ResponseEntity.ok(messageBody(scrimFacade.cancelScrim(id, reason)));
     }
 
     @PostMapping("/{id}/finalizar")

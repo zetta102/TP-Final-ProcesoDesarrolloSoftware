@@ -1,31 +1,52 @@
 @startuml
 actor "Organizador" as Org
+control "ScrimController" as API
+control "ScrimFacade" as Facade
 control "ScrimService" as Service
 control "ScrimBuilder" as Builder
+control "GameValidatorFactory" as ValidatorFactory
 control "GameValidator\n(Template Method)" as Validator
-entity "Scrim" as Model
+entity "Lobby" as Model
 database "PostgreSQL" as DB
-control "Kafka" as Kafka
+control "ApplicationEventPublisher" as EventBus
 
-Org -> Service : POST /api/scrims (json payload) crearScrim(dto)
+Org -> API : POST /v1/api/scrims (CreateScrimRequest)
+API -> Facade : createScrim(request)
+Facade -> Service : createScrim(request)
+
+Service -> Service : validate playersPerSide (1-5)
+Service -> Service : validate totalPlayers (2-10)
+Service -> DB : playerRepository.findByUsername(hostUserName)
+DB --> Service : host
+
 Service -> Builder : new ScrimBuilder()
+Builder -> Builder : host(host)
+Builder -> Builder : fecha(scheduledDate)
+Builder -> Builder : region(region)
+Builder -> Builder : formato(minPlayers, maxPlayers)
+Builder -> Builder : rango(minRank, maxRank)
+Builder -> Builder : juego(game, map)
+Builder -> Builder : latenciaMax(maxLatency)
+Builder -> Builder : duracion(duration)
+Builder -> Builder : modalidad(mode)
 
-Builder -> Builder : juego(dto.juego)
-Builder -> Builder : rango(dto.min, dto.max)
-Builder -> Builder : formato(dto.formato, dto.roles)
-Builder -> Builder : fecha(dto.fechaHora)
+Service -> ValidatorFactory : resolve(game)
+ValidatorFactory --> Service : gameValidator
 
+Builder -> Builder : validator(gameValidator)
 Service -> Builder : build()
-Builder -> Validator : validateComposition(tempData)
-Validator --> Builder : validation OK
+Builder -> Builder : validateInvariants(host, region, maxPlayers)
+Builder -> Validator : validate(lobby)
+Validator --> Builder : OK
+Builder --> Service : Lobby(status="Buscando", host in players)
 
-Builder --> Model : new Scrim(validData)
-Model -> Model : setState(new BuscandoState())
-Builder --> Service : scrimInstance
+Service -> DB : lobbyRepository.save(lobby)
+DB --> Service : savedLobby
 
-Service -> DB : save(scrimInstance)
-DB --> Service : savedScrim
-Service -> Kafka : publish(new ScrimCreadoEvent(savedScrim.id))
-Service --> API : 201 Created (Scrim ID)
-API --> Org : Confirmation JSON
+Service -> EventBus : publishEvent(ScrimCreatedEvent(lobbyId, game, region))
+note right: NotificationSubscriber recibe el evento\ny notifica a jugadores con búsquedas guardadas
+
+Service --> Facade : savedLobby
+Facade --> API : savedLobby
+API --> Org : 201 Created (Lobby JSON)
 @enduml
