@@ -38,12 +38,12 @@ public class ScrimController {
         return ResponseEntity.ok(scrimFacade.findScrims(game, region, minRank, maxRank, date, maxLatency));
     }
 
-    @PostMapping("/{id}/postulaciones")
+    @PostMapping("/{id}/postular")
     public ResponseEntity<LobbyConfirmation> apply(@PathVariable String id, @RequestBody ApplyToScrimRequest request) {
         return ResponseEntity.ok(scrimFacade.applyToScrim(id, request));
     }
 
-    @PostMapping("/{id}/confirmaciones")
+    @PostMapping("/{id}/confirmar")
     public ResponseEntity<Map<String, String>> confirmParticipation(
             @PathVariable String id, @RequestBody ConfirmParticipationRequest request) {
         return ResponseEntity.ok(messageBody(scrimFacade.confirmParticipation(id, request)));

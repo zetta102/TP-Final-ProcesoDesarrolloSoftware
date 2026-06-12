@@ -22,8 +22,8 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<Player> register(@RequestBody PlayerData playerData) {
-        return ResponseEntity.status(201).body(authService.register(playerData));
+    public ResponseEntity<Player> register(@RequestBody PlayerData playerData, @RequestHeader("X-User-Role") String userRole) {
+        return ResponseEntity.status(201).body(authService.register(playerData, userRole));
     }
 
     @PostMapping("/login")
@@ -41,16 +41,10 @@ public class AuthController {
         return ResponseEntity.status(201).body(authService.registerViaOAuth(callbackData));
     }
 
-    @PostMapping("/{username}/verify-email")
+    @PostMapping("/verify-email")
     public ResponseEntity<Map<String, String>> verifyEmail(
-            @PathVariable String username,
-            @RequestParam(required = false) String token) {
-        String message;
-        if (token != null && !token.isBlank()) {
-            message = authService.verifyEmailWithToken(username, token);
-        } else {
-            message = authService.verifyEmail(username);
-        }
-        return ResponseEntity.ok(Map.of(MESSAGE_KEY, message));
+            @RequestParam String username,
+            @RequestParam String token) {
+        return ResponseEntity.ok(Map.of(MESSAGE_KEY, authService.verifyEmailWithToken(username, token)));
     }
 }

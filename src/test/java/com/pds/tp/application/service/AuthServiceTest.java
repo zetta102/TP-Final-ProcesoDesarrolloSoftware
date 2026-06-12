@@ -49,7 +49,7 @@ class AuthServiceTest {
         when(passwordEncoder.encode("plain")).thenReturn("hashed");
         when(playerRepository.save(any(Player.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Player saved = authService.register(input);
+        Player saved = authService.register(input, "USER");
 
         assertEquals("neo", saved.getUsername());
         assertEquals("hashed", saved.getPassword());
@@ -60,7 +60,7 @@ class AuthServiceTest {
         PlayerData input = new PlayerData("neo", "neo@test.com", "plain", "FLEX", "LAS", "PC", "NOCHE");
         when(playerRepository.existsByUsername("neo")).thenReturn(true);
 
-        assertThrows(IllegalArgumentException.class, () -> authService.register(input));
+        assertThrows(IllegalArgumentException.class, () -> authService.register(input, "USER"));
         verify(playerRepository, never()).save(any(Player.class));
     }
 

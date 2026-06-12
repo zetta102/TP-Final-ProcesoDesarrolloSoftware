@@ -13,6 +13,8 @@ services:
       timeout: 5s
       retries: 10
       start_period: 15s
+    networks:
+      - app_network
 
   observability:
     image: 'grafana/otel-lgtm:latest'
@@ -22,6 +24,8 @@ services:
       - '4318:4318'
     tty: true
     stdin_open: true
+    networks:
+      - app_network
 
   broker:
     image: 'apache/kafka:latest'
@@ -30,7 +34,7 @@ services:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@broker:9093
@@ -47,28 +51,38 @@ services:
       timeout: 10s
       retries: 12
       start_period: 20s
-
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: final-app
-    ports:
-      - '8081:8081'
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/postgres
-      SPRING_DATASOURCE_USERNAME: user
-      SPRING_DATASOURCE_PASSWORD: secret
-      KAFKA_BOOTSTRAP_SERVERS: broker:9092
-      KAFKA_GROUP_ID: final-consumer-group
-      KAFKA_TOPIC_SCRIM_EVENTS: topic1
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://observability:4318
-    depends_on:
-      postgres:
-        condition: service_healthy
-      broker:
-        condition: service_healthy
-      observability:
-        condition: service_started
     networks:
-      - default
+      - app_network
+
+#  app:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    container_name: final-app
+#    ports:
+#      - '8081:8081'
+#    environment:
+#      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/postgres
+#      SPRING_DATASOURCE_USERNAME: user
+#      SPRING_DATASOURCE_PASSWORD: secret
+#      KAFKA_BOOTSTRAP_SERVERS: broker:9092
+#      KAFKA_GROUP_ID: final-consumer-group
+#      KAFKA_TOPIC_SCRIM_EVENTS: topic1
+#      OTEL_EXPORTER_OTLP_ENDPOINT: http://observability:4318
+#    depends_on:
+#      postgres:
+#        condition: service_healthy
+#      broker:
+#        condition: service_healthy
+#      observability:
+#        condition: service_started
+#    networks:
+#      - app_network
+
+networks:
+  app_network:
+    driver: bridge
+#    ipam:
+#      driver: default
+#      config:
+#        - subnet: 172.20.0.0/16

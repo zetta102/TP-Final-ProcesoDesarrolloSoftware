@@ -34,7 +34,7 @@ public class AuthService {
         this.jwtService = jwtService;
     }
 
-    public Player register(PlayerData playerData) {
+    public Player register(PlayerData playerData, String userRole) {
         if (playerRepository.existsByUsername(playerData.playerName())) {
             throw new IllegalArgumentException("El nombre de usuario ya está registrado.");
         }
@@ -47,6 +47,7 @@ public class AuthService {
                 playerData.playerName(),
                 playerData.email(),
                 hashedPassword,
+                userRole,
                 playerData.preferredRole(),
                 playerData.region(),
                 playerData.platform(),
@@ -84,6 +85,7 @@ public class AuthService {
                 username,
                 email,
                 passwordEncoder.encode(UUID.randomUUID().toString()), // Random password for OAuth users
+                "USER",
                 "FLEX",
                 "LATAM",
                 callbackData.provider(),

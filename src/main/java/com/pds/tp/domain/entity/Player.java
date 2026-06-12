@@ -60,12 +60,12 @@ public class Player {
     @Setter
     private String verificationToken;
 
-    public Player(String username, String email, String password, String preferredRole, String region, String platform, String availability) {
+    public Player(String username, String email, String password, String role, String preferredRole, String region, String platform, String availability) {
         this.username = username;
         this.email = email;
         this.password = password;
         this.emailVerificationStatus = EmailVerificationStatus.PENDING;
-        this.role = UserRole.USER;
+        this.role = UserRole.of(role);
         this.preferredRole = preferredRole;
         this.region = region;
         this.platform = platform;

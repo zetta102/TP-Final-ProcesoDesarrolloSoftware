@@ -19,7 +19,8 @@ public class ScrimLifecycleScheduler {
         this.scrimService = scrimService;
     }
 
-    @Scheduled(fixedRate = 30, timeUnit = TimeUnit.SECONDS)
+    //
+    // @Scheduled(fixedRate = 30, timeUnit = TimeUnit.SECONDS)
     public void progressScrimLifecycle() {
         LocalDateTime now = LocalDateTime.now();
 
@@ -31,7 +32,7 @@ public class ScrimLifecycleScheduler {
         }
     }
 
-    @Scheduled(fixedRate = 60, timeUnit = TimeUnit.SECONDS)
+    //@Scheduled(fixedRate = 60, timeUnit = TimeUnit.SECONDS)
     public void runMatchmaking() {
         scrimService.runMatchmakingPass();
     }

@@ -25,7 +25,7 @@ public final class TestFixtures {
     }
 
     public static Player player(String username, String email, String region) {
-        Player player = new Player(username, email, DEFAULT_PASSWORD, DEFAULT_ROLE, region, DEFAULT_PLATFORM, DEFAULT_AVAILABILITY);
+        Player player = new Player(username, email, DEFAULT_PASSWORD, "USER", DEFAULT_ROLE, region, DEFAULT_PLATFORM, DEFAULT_AVAILABILITY);
         setId(player);
         return player;
     }

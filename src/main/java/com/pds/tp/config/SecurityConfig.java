@@ -46,7 +46,8 @@ public class SecurityConfig {
                                 "/v1/api/scrims/*/cancelar")
                         .hasAnyRole("MOD", "ADMIN")
                         .requestMatchers(
-                                "/v1/api/scrims/*/reportes", "/v1/api/players/**")
+                                "/v1/api/scrims/*/reportes",
+                                "/v1/api/players/**")
                         .hasAnyRole("USER", "MOD", "ADMIN")
                         .anyRequest().authenticated()
                 )
