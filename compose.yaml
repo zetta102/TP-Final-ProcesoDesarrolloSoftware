@@ -54,30 +54,30 @@ services:
     networks:
       - app_network
 
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: final-app
-    ports:
-      - '8081:8081'
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/postgres
-      SPRING_DATASOURCE_USERNAME: user
-      SPRING_DATASOURCE_PASSWORD: secret
-      KAFKA_BOOTSTRAP_SERVERS: broker:9092
-      KAFKA_GROUP_ID: final-consumer-group
-      KAFKA_TOPIC_SCRIM_EVENTS: topic1
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://observability:4318
-    depends_on:
-      postgres:
-        condition: service_healthy
-      broker:
-        condition: service_healthy
-      observability:
-        condition: service_started
-    networks:
-      - app_network
+#  app:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    container_name: final-app
+#    ports:
+#      - '8081:8081'
+#    environment:
+#      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/postgres
+#      SPRING_DATASOURCE_USERNAME: user
+#      SPRING_DATASOURCE_PASSWORD: secret
+#      KAFKA_BOOTSTRAP_SERVERS: broker:9092
+#      KAFKA_GROUP_ID: final-consumer-group
+#      KAFKA_TOPIC_SCRIM_EVENTS: topic1
+#      OTEL_EXPORTER_OTLP_ENDPOINT: http://observability:4318
+#    depends_on:
+#      postgres:
+#        condition: service_healthy
+#      broker:
+#        condition: service_healthy
+#      observability:
+#        condition: service_started
+#    networks:
+#      - app_network
 
 networks:
   app_network:

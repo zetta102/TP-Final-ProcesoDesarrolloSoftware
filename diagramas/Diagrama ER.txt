@@ -1,6 +1,7 @@
 @startuml DiagramaClasesDominio
 skinparam classAttributeIconSize 0
 skinparam linetype ortho
+left to right direction
 hide empty members
 
 title Diagrama de Clases de Dominio – eScrims
