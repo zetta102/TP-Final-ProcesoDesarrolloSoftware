@@ -327,17 +327,19 @@ package "domain.builder" <<Rectangle>> {
 ScrimBuilder ..> Lobby : <<creates>>
 ScrimBuilder ..> GameValidator : uses
 
-' ═══════════════════════════════════════════════════════════════
-' TEMPLATE METHOD PATTERN (Validation)
-' ═══════════════════════════════════════════════════════════════
-package "domain.validation" <<Rectangle>> {
-
-    abstract class GameValidator <<TemplateMethod>> {
+abstract class GameValidator <<TemplateMethod>> {
         + {final} validate(lobby : Lobby)
         # validateTeamSize(lobby : Lobby)
         # {abstract} validateRoles(lobby : Lobby)
         # {abstract} validateGameSpecificRules(lobby : Lobby)
     }
+
+
+' ═══════════════════════════════════════════════════════════════
+' TEMPLATE METHOD PATTERN (Validation)
+' ═══════════════════════════════════════════════════════════════
+package "domain.validation" <<Rectangle>> {
+
 
     class DefaultGameValidator <<TemplateMethod>>
     class StrictGameFormatValidator <<TemplateMethod>>
@@ -455,7 +457,7 @@ NotificationSubscriber ..> ScrimStateChangedEvent : <<listens>>
 NotificationSubscriber ..> ScrimCreatedEvent : <<listens>>
 
 ' ═══════════════════════════════════════════════════════════════
-' CROSS-PACKAGE RELATIONSHIPS
+' CROSS-PACKAGE RELATIONSHIPS & FLOATING CLASS RESOLUTION
 ' ═══════════════════════════════════════════════════════════════
 ScrimContext ..> ScrimStateChangedEvent : publishes
 Player --> EmailVerificationStatus
@@ -463,5 +465,14 @@ Player --> UserRole
 Report --> ReportStatus
 Waitlist --> WaitlistStatus
 
-@enduml
+' Resolving previously floating or orphaned references
+MatchmakingStrategy ..> Lobby : evaluates
+MatchmakingStrategy ..> Player : evaluates
+MatchmakingStrategy ..> RankScale : uses
+Lobby ..> RankScale : uses
+ModerationNode ..> Report : processes
+GameValidator ..> Lobby : validates
+SavedSearch ..> Lobby : matches
+ScrimBuilder ..> Player : host
 
+@enduml
