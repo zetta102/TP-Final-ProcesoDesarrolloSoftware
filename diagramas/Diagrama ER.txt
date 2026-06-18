@@ -444,6 +444,64 @@ package "infrastructure.notification" <<Rectangle>> {
         + onScrimCreated(event : ScrimCreatedEvent)
         - sendWithRetry(notifier : Notifier, target : String, message : String, channel : String)
     }
+
+    class ScrimFacade {
+  - playerRepository: PlayerRepository
+  - scrimService: ScrimService
+  - commandExecutor: CommandExecutor
+  - reportService: ReportService
+  - lobbyRepository: LobbyRepository
+  - stateResolver: ScrimStateResolver
+  + cancelScrim(String, String): String
+  + confirmParticipation(String, ConfirmParticipationRequest): String
+  + findScrims(String, String, String, String, String, Integer): List<Lobby>
+  + applyToScrim(String, ApplyToScrimRequest): LobbyConfirmation
+  + startScrim(String): Scrim
+  + finishScrim(String): String
+  + saveStatistics(String, CreateStatisticsRequest): ScrimStatistics
+  + createScrim(CreateScrimRequest): Lobby
+  + executeCommand(String, String, SwapPlayersRequest): String
+  + reportPlayer(String, ReportApplication): ReportConfirmation
+}
+class ScrimService {
+  - STATUS_BUSCANDO: String
+  - scrimStatisticsRepository: ScrimStatisticsRepository
+  - stateResolver: ScrimStateResolver
+  - STATUS_EN_JUEGO: String
+  - waitlistRepository: WaitlistRepository
+  - log: Logger
+  - scrimRepository: ScrimRepository
+  - STATUS_CONFIRMADO: String
+  - gameValidatorFactory: GameValidatorFactory
+  - mmrRecalculator: MMRRecalculator
+  - eventPublisher: ApplicationEventPublisher
+  - playerScrimStatsRepository: PlayerScrimStatsRepository
+  - lobbyRepository: LobbyRepository
+  - playerRepository: PlayerRepository
+  - matchmakingStrategy: MatchmakingStrategy
+  - STATUS_FINALIZADO: String
+  + cancelLobbyById(UUID, String): String
+  + saveStatistics(UUID, CreateStatisticsRequest): ScrimStatistics
+  + finishScrimById(UUID): String
+  + startScrim(ScrimData): Scrim
+  - createAndPersistScrim(Lobby): Scrim
+  + findActiveLobbiesByRegionAndRank(FindLobbyData): List<Lobby>
+  + autoFinalizeRunningScrims(LocalDateTime, long): int
+  + runMatchmakingPass(): void
+  - parseScheduledDate(String): LocalDateTime
+  + getStatistics(UUID): ScrimStatistics
+  + autoStartConfirmedLobbies(LocalDateTime): int
+  - applyLateCancellationPenalty(Lobby): void
+  - compareRanks(String, String): int
+  - isSameDay(Lobby, String): boolean
+  + confirmParticipation(UUID, String): String
+  + applyToLobby(LobbyApplication): LobbyConfirmation
+  - enqueueWaitlistIfNeeded(Lobby, Player, String): void
+  - promoteWaitlistedPlayers(Lobby): void
+  + createScrim(CreateScrimRequest): Lobby
+}
+
+ScrimFacade  "1" *-[#595959,plain]-> "scrimService\n1" ScrimService
 }
 
 NotifierFactory <|.. DevNotifierFactory
@@ -465,7 +523,6 @@ Player --> UserRole
 Report --> ReportStatus
 Waitlist --> WaitlistStatus
 
-' Resolving previously floating or orphaned references
 MatchmakingStrategy ..> Lobby : evaluates
 MatchmakingStrategy ..> Player : evaluates
 MatchmakingStrategy ..> RankScale : uses
@@ -474,5 +531,4 @@ ModerationNode ..> Report : processes
 GameValidator ..> Lobby : validates
 SavedSearch ..> Lobby : matches
 ScrimBuilder ..> Player : host
-
 @enduml
